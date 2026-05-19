@@ -19,6 +19,9 @@ import { toggleRecurring, syncRecurringExpenses } from "@/app/actions/cashflow";
 export default async function AdminRecurringPage() {
   await requireRole("ADMIN");
 
+  async function noopAction() {
+    "use server";
+  }
   async function handleToggleRecurring(formData: FormData) {
     "use server";
     const id = String(formData.get("id"));

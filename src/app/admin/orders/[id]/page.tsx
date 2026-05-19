@@ -17,6 +17,9 @@ import { formatDate, formatIDR } from "@/lib/format";
 import { assignOrder } from "@/app/actions/admin";
 
 export default async function AdminOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  async function noopAction() {
+    "use server";
+  }
   const { id } = await params;
   const [order, usersList, designersList, packagesList, ordersList] = await Promise.all([
     orderById(id),

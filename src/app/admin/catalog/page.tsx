@@ -16,6 +16,9 @@ import { formatIDR } from "@/lib/format";
 import { togglePackageActive } from "@/app/actions/cms";
 
 export default async function AdminCatalogPage() {
+  async function noopAction() {
+    "use server";
+  }
   async function handleTogglePackage(formData: FormData) {
     "use server";
     const packageId = String(formData.get("packageId"));

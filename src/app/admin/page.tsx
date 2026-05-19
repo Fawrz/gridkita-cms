@@ -23,8 +23,8 @@ export default async function AdminHomePage() {
     designerRanking(),
     orderFunnel(),
   ]);
-  const userMap = new Map(usersList.map(u => [u.id, u]));
-  const packageMap = new Map(packagesList.map(p => [p.id, p]));
+  const userMap = new Map(usersList.map((u) => [u.id, u]));
+  const packageMap = new Map(packagesList.map((p) => [p.id, p]));
   const needsAction = ordersList
     .filter((o) => ["WAITING_VERIFICATION", "PAID", "QUOTE_REQUESTED", "DONE"].includes(o.status))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
@@ -62,7 +62,7 @@ export default async function AdminHomePage() {
             <Button asChild variant="outline" size="sm"><Link href="/admin/orders">Semua order</Link></Button>
           </div>
           <ul className="divide-y">
-            {needsAction.map((o) => {
+            {needsAction.map((o: { id: string; clientId: string; servicePackageId?: string | null; brief: { projectName: string }; status: string; code: string; updatedAt: string; finalPrice: number }) => {
               const client = userMap.get(o.clientId);
               const pkg = o.servicePackageId ? packageMap.get(o.servicePackageId) : null;
               return (
@@ -71,7 +71,7 @@ export default async function AdminHomePage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium truncate">{o.brief.projectName}</span>
-                        <OrderStatusBadge status={o.status} />
+                        <OrderStatusBadge status={o.status as "DELIVERED" | "CANCELLED" | "DONE" | "IN_PROGRESS" | "REVISION" | "ASSIGNED" | "PAID" | "PENDING_PAYMENT" | "QUOTE_REQUESTED" | "QUOTE_OFFERED" | "WAITING_VERIFICATION"} />
                       </div>
                       <div className="mt-1 text-xs text-muted-foreground flex flex-wrap gap-x-3">
                         <span className="font-mono">{o.code}</span>

@@ -29,10 +29,10 @@ export default async function AdminReportsPage() {
 
   const revenue = cashFlowsList
     .filter((c) => c.source === "ORDER_PAYMENT")
-    .reduce((s, c) => s + c.amount, 0);
+    .reduce((s: number, c) => s + c.amount, 0);
   const expense = cashFlowsList
     .filter((c) => c.type === "EXPENSE")
-    .reduce((s, c) => s + c.amount, 0);
+    .reduce((s: number, c) => s + c.amount, 0);
   const profit = revenue - expense;
   const margin = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
 
@@ -50,13 +50,13 @@ export default async function AdminReportsPage() {
     });
     const inc = cashFlowsList
       .filter((c) => c.occurredAt.startsWith(m) && c.type === "INCOME" && c.source === "ORDER_PAYMENT")
-      .reduce((s, c) => s + c.amount, 0);
+      .reduce((s: number, c) => s + c.amount, 0);
     const exp = cashFlowsList
       .filter((c) => c.occurredAt.startsWith(m) && c.type === "EXPENSE")
-      .reduce((s, c) => s + c.amount, 0);
+      .reduce((s: number, c) => s + c.amount, 0);
     const payrollPaid = payrollEntriesList
       .filter((e) => e.accruedAt.startsWith(m))
-      .reduce((s, e) => s + e.commissionAmount, 0);
+      .reduce((s: number, e) => s + e.commissionAmount, 0);
     return {
       month: shortMonth,
       revenue: inc,

@@ -13,6 +13,9 @@ import { formatDate } from "@/lib/format";
 import { deletePortfolio } from "@/app/actions/cms";
 
 export default async function AdminPortfolioPage() {
+  async function noopAction() {
+    "use server";
+  }
   async function handleDeletePortfolio(formData: FormData) {
     "use server";
     const portfolioId = String(formData.get("portfolioId"));
