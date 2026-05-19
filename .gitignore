@@ -42,6 +42,6 @@ next-env.d.ts
 
 
 # Private file storage
-/storage/payment-proofs/
-/storage/briefs/
-/storage/deliverables/
+storage/payment-proofs/
+storage/briefs/
+storage/deliverables/
