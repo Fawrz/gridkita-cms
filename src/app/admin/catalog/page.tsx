@@ -13,12 +13,15 @@ import { FormField } from "@/components/form-field";
 import { ActionIconButton } from "@/components/action-icon-button";
 import { categories, packages } from "@/lib/queries/catalog";
 import { formatIDR } from "@/lib/format";
+import { togglePackageActive } from "@/app/actions/cms";
 
 export default async function AdminCatalogPage() {
-  async function noopAction() {
+  async function handleTogglePackage(formData: FormData) {
     "use server";
-    redirect("/admin/catalog");
+    const packageId = String(formData.get("packageId"));
+    await togglePackageActive(packageId);
   }
+
   const [categoriesList, packagesList] = await Promise.all([categories(), packages()]);
 
   return (
@@ -69,7 +72,8 @@ export default async function AdminCatalogPage() {
                         </div>
                         <div className="flex gap-1.5">
                           <PackageDialog action={noopAction} editTitle={p.name} />
-                          <form action={noopAction}>
+                          <form action={handleTogglePackage}>
+                            <input type="hidden" name="packageId" value={p.id} />
                             <ActionIconButton type="submit" label={`${p.isActive ? "Nonaktifkan" : "Aktifkan"} ${p.name}`}>
                               <Power className="size-4" aria-hidden="true" />
                             </ActionIconButton>

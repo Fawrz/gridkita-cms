@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Send, Eye } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,9 +11,18 @@ import { OrderStatusBadge } from "@/components/order-status-badge";
 import { allOrders } from "@/lib/queries/orders";
 import { allUsers } from "@/lib/queries/users";
 import { formatDate, formatIDR } from "@/lib/format";
+import { sendQuote } from "@/app/actions/admin";
 
 export default async function AdminQuotesPage() {
-  async function noopAction() { "use server"; redirect("/admin/quotes"); }
+  async function handleSendQuote(formData: FormData) {
+    "use server";
+    const orderId = String(formData.get("orderId"));
+    const price = Number(formData.get("price"));
+    const days = Number(formData.get("days"));
+    const note = String(formData.get("note"));
+    await sendQuote(orderId, price, days, note);
+  }
+
   const [ordersList, usersList] = await Promise.all([allOrders(), allUsers()]);
   const userMap = new Map(usersList.map(u => [u.id, u]));
   const list = ordersList.filter((o) => o.type === "CUSTOM").sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -36,10 +44,11 @@ export default async function AdminQuotesPage() {
                   {o.quotedPrice && <div className="mt-3 text-sm">Quote saat ini: <strong className="tabular-nums">{formatIDR(o.quotedPrice)}</strong></div>}
                   <Button asChild variant="outline" size="sm" className="mt-4"><Link href={`/admin/orders/${o.id}`}><Eye className="size-4 mr-1" /> Detail</Link></Button>
                 </div>
-                <form action={noopAction} className="space-y-3 rounded-xl border bg-muted/20 p-4">
-                  <div className="space-y-1.5"><Label>Harga penawaran</Label><Input type="number" placeholder="cth. 1800000" defaultValue={o.quotedPrice ?? ""} /></div>
-                  <div className="space-y-1.5"><Label>Estimasi hari</Label><Input type="number" placeholder="cth. 10" /></div>
-                  <div className="space-y-1.5"><Label>Catatan quote</Label><Textarea rows={3} placeholder="Scope termasuk poster, e-flyer, feed 5 slot..." /></div>
+                <form action={handleSendQuote} className="space-y-3 rounded-xl border bg-muted/20 p-4">
+                  <input type="hidden" name="orderId" value={o.id} />
+                  <div className="space-y-1.5"><Label>Harga penawaran</Label><Input type="number" name="price" placeholder="cth. 1800000" defaultValue={o.quotedPrice ?? ""} /></div>
+                  <div className="space-y-1.5"><Label>Estimasi hari</Label><Input type="number" name="days" placeholder="cth. 10" /></div>
+                  <div className="space-y-1.5"><Label>Catatan quote</Label><Textarea name="note" rows={3} placeholder="Scope termasuk poster, e-flyer, feed 5 slot..." /></div>
                   <Button type="submit" className="w-full"><Send className="size-4 mr-1" /> Kirim Quote</Button>
                 </form>
               </CardContent>

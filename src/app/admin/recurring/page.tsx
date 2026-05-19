@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { Plus, Pencil } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,14 +13,21 @@ import { EntityCard } from "@/components/entity-card";
 import { requireRole } from "@/lib/session";
 import { recurringExpenses, expenseCategories } from "@/lib/queries/finance";
 import { formatIDR, formatDate } from "@/lib/format";
-import { CalendarClock, Repeat } from "lucide-react";
+import { CalendarClock, Repeat, RefreshCw } from "lucide-react";
+import { toggleRecurring, syncRecurringExpenses } from "@/app/actions/cashflow";
 
 export default async function AdminRecurringPage() {
   await requireRole("ADMIN");
 
-  async function noopAction() {
+  async function handleToggleRecurring(formData: FormData) {
     "use server";
-    redirect("/admin/recurring");
+    const id = String(formData.get("id"));
+    await toggleRecurring(id);
+  }
+
+  async function handleSyncRecurring() {
+    "use server";
+    await syncRecurringExpenses();
   }
 
   const [recurringExpensesList, expenseCategoriesList] = await Promise.all([
@@ -37,7 +43,14 @@ export default async function AdminRecurringPage() {
         title="Pengeluaran Rutin"
         description="Template pengeluaran berulang otomatis (WiFi, software). Bersifat idempoten: aman dipanggil berkali-kali."
         actions={
-          <RecurringDialog action={noopAction} categories={expenseCategoriesList} />
+          <div className="flex gap-2">
+            <form action={handleSyncRecurring}>
+              <Button type="submit" variant="outline">
+                <RefreshCw className="size-4 mr-1.5" /> Sync Recurring
+              </Button>
+            </form>
+            <RecurringDialog action={noopAction} categories={expenseCategoriesList} />
+          </div>
         }
       />
 
@@ -114,7 +127,8 @@ export default async function AdminRecurringPage() {
                         {r.lastGeneratedAt ? formatDate(r.lastGeneratedAt) : "—"}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <form action={noopAction}>
+                        <form action={handleToggleRecurring}>
+                          <input type="hidden" name="id" value={r.id} />
                           <Switch
                             defaultChecked={r.isActive}
                             aria-label={`Toggle ${r.name}`}

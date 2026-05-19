@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   Upload,
@@ -28,6 +28,7 @@ import { packageById } from "@/lib/queries/catalog";
 import { userById, allUsers } from "@/lib/queries/users";
 import { calculateSplit } from "@/lib/payroll";
 import { formatIDR, formatDate, formatDateTime } from "@/lib/format";
+import { updateOrderStatus, uploadDeliverable } from "@/app/actions/designer";
 
 export default async function DesignerTaskDetailPage({
   params,
@@ -50,9 +51,12 @@ export default async function DesignerTaskDetailPage({
   const canStart = order.status === "ASSIGNED";
   const canFinish = ["IN_PROGRESS", "REVISION"].includes(order.status);
 
-  async function noopAction() {
+  async function handleUpdateStatus(formData: FormData) {
     "use server";
-    redirect(`/designer/tasks/${order!.id}`);
+    const orderId = String(formData.get("orderId"));
+    const toStatus = String(formData.get("toStatus")) as any;
+    const note = String(formData.get("note") || "");
+    await updateOrderStatus(orderId, toStatus, note || undefined);
   }
 
   return (
@@ -134,21 +138,27 @@ export default async function DesignerTaskDetailPage({
               <h2 className="font-semibold mb-3">Tindakan</h2>
               <div className="flex flex-wrap gap-2">
                 {canStart && (
-                  <form action={noopAction}>
+                  <form action={handleUpdateStatus}>
+                    <input type="hidden" name="orderId" value={order.id} />
+                    <input type="hidden" name="toStatus" value="IN_PROGRESS" />
                     <Button type="submit">
                       <Play className="size-4 mr-1.5" /> Mulai Pengerjaan
                     </Button>
                   </form>
                 )}
                 {canFinish && (
-                  <form action={noopAction}>
+                  <form action={handleUpdateStatus}>
+                    <input type="hidden" name="orderId" value={order.id} />
+                    <input type="hidden" name="toStatus" value="DONE" />
                     <Button type="submit">
                       <CheckCircle2 className="size-4 mr-1.5" /> Tandai Selesai (DONE)
                     </Button>
                   </form>
                 )}
                 {order.status === "IN_PROGRESS" && (
-                  <form action={noopAction}>
+                  <form action={handleUpdateStatus}>
+                    <input type="hidden" name="orderId" value={order.id} />
+                    <input type="hidden" name="toStatus" value="REVISION" />
                     <Button type="submit" variant="outline">
                       <RotateCcw className="size-4 mr-1.5" /> Tandai Revisi
                     </Button>
@@ -157,7 +167,8 @@ export default async function DesignerTaskDetailPage({
               </div>
 
               {canFinish && (
-                <form action={noopAction} className="mt-5 space-y-2">
+                <form action={uploadDeliverable} className="mt-5 space-y-2">
+                  <input type="hidden" name="orderId" value={order.id} />
                   <Label>Unggah deliverable final</Label>
                   <label
                     htmlFor="delivery"
@@ -167,7 +178,7 @@ export default async function DesignerTaskDetailPage({
                     <span className="text-xs text-muted-foreground">
                       ZIP / FIG / PDF / PNG — maks 100MB
                     </span>
-                    <input id="delivery" type="file" multiple className="hidden" />
+                    <input id="delivery" name="file" type="file" multiple className="hidden" />
                   </label>
                 </form>
               )}

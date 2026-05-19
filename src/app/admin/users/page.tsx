@@ -16,6 +16,7 @@ import { allUsers } from "@/lib/queries/users";
 import { allOrders } from "@/lib/queries/orders";
 import { commissionByDesigner } from "@/lib/queries/finance";
 import { formatDate, formatIDR } from "@/lib/format";
+import { createDesigner, toggleUserActive } from "@/app/actions/cms";
 
 export default async function AdminUsersPage() {
   const [usersList, ordersList] = await Promise.all([
@@ -40,14 +41,26 @@ export default async function AdminUsersPage() {
       ])
   );
 
-  async function noopAction() {
+  async function handleCreateDesigner(formData: FormData) {
     "use server";
-    redirect("/admin/users");
+    const data = {
+      name: String(formData.get("name")),
+      email: String(formData.get("email")),
+      password: String(formData.get("password")),
+      bankAccount: String(formData.get("bankAccount") || undefined),
+    };
+    await createDesigner(data);
+  }
+
+  async function handleToggleUser(formData: FormData) {
+    "use server";
+    const userId = String(formData.get("userId"));
+    await toggleUserActive(userId);
   }
 
   return (
     <>
-      <PageHeader title="Manajemen User" description="Buat akun desainer baru dan nonaktifkan akun yang tidak aktif." actions={<UserDialog action={noopAction} />} />
+      <PageHeader title="Manajemen User" description="Buat akun desainer baru dan nonaktifkan akun yang tidak aktif." actions={<UserDialog action={handleCreateDesigner} />} />
 
       <div className="grid gap-3 md:hidden">
         {usersList.map((u) => {
@@ -113,8 +126,9 @@ export default async function AdminUsersPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex justify-end gap-1.5">
-                          <UserDialog action={noopAction} editName={u.name} />
-                          <form action={noopAction}>
+                          <UserDialog action={handleCreateDesigner} editName={u.name} />
+                          <form action={handleToggleUser}>
+                            <input type="hidden" name="userId" value={u.id} />
                             <ActionIconButton type="submit" label={`${u.isActive ? "Nonaktifkan" : "Aktifkan"} ${u.name}`}>
                               <Power className="size-4" aria-hidden="true" />
                             </ActionIconButton>
@@ -137,7 +151,7 @@ function UserDialog({
   action,
   editName,
 }: {
-  action: () => Promise<void>;
+  action: (formData: FormData) => Promise<void>;
   editName?: string;
 }) {
   const suffix = editName ? "edit" : "new";
@@ -153,6 +167,7 @@ function UserDialog({
         <form action={action} className="space-y-4">
           <FormField id={`user-name-${suffix}`} label="Nama"><Input name="name" defaultValue={editName ?? ""} /></FormField>
           <FormField id={`user-email-${suffix}`} label="Email"><Input name="email" type="email" placeholder="designer@gridkita.id" /></FormField>
+          {!editName && <FormField id={`user-password-${suffix}`} label="Password"><Input name="password" type="password" placeholder="••••••••" /></FormField>}
           <div className="space-y-1.5">
             <Label>Role</Label>
             <Select name="role" defaultValue="DESIGNER">

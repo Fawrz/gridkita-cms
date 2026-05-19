@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { Plus, TrendingDown, TrendingUp, Minus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,7 @@ import { StatCard } from "@/components/stat-card";
 import { requireRole } from "@/lib/session";
 import { cashFlows, expenseCategories } from "@/lib/queries/finance";
 import { formatIDR, formatDate } from "@/lib/format";
+import { addManualCashFlow } from "@/app/actions/cashflow";
 
 const SOURCE_LABEL: Record<string, string> = {
   ORDER_PAYMENT: "Pembayaran Order",
@@ -29,9 +29,16 @@ export default async function AdminCashflowPage({
   await requireRole("ADMIN");
   const { type = "all" } = await searchParams;
 
-  async function addEntry() {
+  async function handleAddManualCashFlow(formData: FormData) {
     "use server";
-    redirect("/admin/cashflow");
+    const data = {
+      type: (formData.get("type") as "INCOME" | "EXPENSE") || "EXPENSE",
+      categoryId: String(formData.get("category") || undefined),
+      amount: Number(formData.get("amount")),
+      description: String(formData.get("description")),
+      occurredAt: String(formData.get("date")),
+    };
+    await addManualCashFlow(data);
   }
 
   const [cashFlowsList, expenseCategoriesList] = await Promise.all([
@@ -69,7 +76,7 @@ export default async function AdminCashflowPage({
               <DialogHeader>
                 <DialogTitle>Catat pengeluaran / pemasukan manual</DialogTitle>
               </DialogHeader>
-              <form action={addEntry} className="space-y-4">
+              <form action={handleAddManualCashFlow} className="space-y-4">
                 <div className="space-y-1.5">
                   <Label>Tipe</Label>
                   <Select name="type" defaultValue="EXPENSE">

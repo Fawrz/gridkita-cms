@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ImageFallback } from "@/components/image-fallback";
 import { packageBySlug } from "@/lib/queries/catalog";
 import { formatIDR } from "@/lib/format";
+import { createPackageOrder, createCustomOrder } from "@/app/actions/orders";
 
 export default async function BriefPage({
   searchParams,
@@ -21,10 +22,24 @@ export default async function BriefPage({
   const pkgItem = pkg ? await packageBySlug(pkg) : null;
   if (!isCustom && !pkgItem) redirect("/dashboard/orders/new");
 
-  async function submitBrief() {
+  async function submitBrief(formData: FormData) {
     "use server";
-    // Mock: lompat ke halaman order baru (pakai order existing untuk demo)
-    redirect("/dashboard/orders/o_004");
+    const briefData: Record<string, string> = {
+      projectName: String(formData.get("projectName")),
+      goals: String(formData.get("goals")),
+      audience: String(formData.get("audience") || ""),
+      deadline: String(formData.get("deadline") || ""),
+      style: String(formData.get("style") || ""),
+      colors: String(formData.get("colors") || ""),
+    };
+
+    if (isCustom) {
+      const description = String(formData.get("customDescription"));
+      await createCustomOrder(description, briefData);
+    } else {
+      const packageId = pkgItem!.id;
+      await createPackageOrder(packageId, briefData);
+    }
   }
 
   return (

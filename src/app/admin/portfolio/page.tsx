@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { redirect } from "next/navigation";
 import { Plus, Pencil, Trash2, ImagePlus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,9 +10,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { PageHeader } from "@/components/page-header";
 import { portfolios } from "@/lib/queries/portfolio";
 import { formatDate } from "@/lib/format";
+import { deletePortfolio } from "@/app/actions/cms";
 
 export default async function AdminPortfolioPage() {
-  async function noopAction() { "use server"; redirect("/admin/portfolio"); }
+  async function handleDeletePortfolio(formData: FormData) {
+    "use server";
+    const portfolioId = String(formData.get("portfolioId"));
+    await deletePortfolio(portfolioId);
+  }
+
   const portfolioList = await portfolios();
   return (
     <>
@@ -25,7 +30,7 @@ export default async function AdminPortfolioPage() {
             <CardContent className="p-5">
               <div className="flex items-start justify-between gap-3"><div><Badge variant="secondary" className="text-[10px]">{p.category}</Badge><h2 className="mt-2 font-semibold leading-tight">{p.title}</h2></div><div className="text-xs text-muted-foreground shrink-0">{formatDate(p.createdAt)}</div></div>
               <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{p.description}</p>
-              <div className="mt-4 flex gap-2"><PortfolioDialog action={noopAction} editTitle={p.title} /><form action={noopAction}><Button type="submit" size="sm" variant="outline"><Trash2 className="size-4 mr-1" /> Hapus</Button></form></div>
+              <div className="mt-4 flex gap-2"><PortfolioDialog action={noopAction} editTitle={p.title} /><form action={handleDeletePortfolio}><input type="hidden" name="portfolioId" value={p.id} /><Button type="submit" size="sm" variant="outline"><Trash2 className="size-4 mr-1" /> Hapus</Button></form></div>
             </CardContent>
           </Card>
         ))}

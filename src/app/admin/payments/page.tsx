@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Check, X, Eye } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,9 +11,22 @@ import { payments } from "@/lib/queries/orders";
 import { allOrders } from "@/lib/queries/orders";
 import { allUsers } from "@/lib/queries/users";
 import { formatDateTime, formatIDR } from "@/lib/format";
+import { approvePayment, rejectPayment } from "@/app/actions/payments";
 
 export default async function AdminPaymentsPage() {
-  async function noopAction() { "use server"; redirect("/admin/payments"); }
+  async function handleApprove(formData: FormData) {
+    "use server";
+    const orderId = String(formData.get("orderId"));
+    await approvePayment(orderId);
+  }
+
+  async function handleReject(formData: FormData) {
+    "use server";
+    const orderId = String(formData.get("orderId"));
+    const reason = String(formData.get("reason"));
+    await rejectPayment(orderId, reason);
+  }
+
   const [paymentsList, ordersList, usersList] = await Promise.all([payments(), allOrders(), allUsers()]);
   const orderMap = new Map(ordersList.map(o => [o.id, o]));
   const userMap = new Map(usersList.map(u => [u.id, u]));
@@ -45,11 +57,17 @@ export default async function AdminPaymentsPage() {
                   </div>
                 </div>
                 {p.status === "WAITING" && (
-                  <form action={noopAction} className="mt-4 grid sm:grid-cols-2 gap-3">
-                    <div className="sm:col-span-2 space-y-1.5"><Label>Alasan reject (jika ditolak)</Label><Textarea rows={2} placeholder="Nominal tidak sesuai / bukti tidak jelas..." /></div>
-                    <Button type="submit"><Check className="size-4 mr-1" /> Approve</Button>
-                    <Button type="submit" variant="outline"><X className="size-4 mr-1" /> Reject</Button>
-                  </form>
+                  <div className="mt-4 grid sm:grid-cols-2 gap-3">
+                    <form action={handleApprove}>
+                      <input type="hidden" name="orderId" value={p.orderId} />
+                      <Button type="submit"><Check className="size-4 mr-1" /> Approve</Button>
+                    </form>
+                    <form action={handleReject} className="space-y-2">
+                      <input type="hidden" name="orderId" value={p.orderId} />
+                      <div className="space-y-1.5"><Label>Alasan reject (jika ditolak)</Label><Textarea name="reason" rows={2} placeholder="Nominal tidak sesuai / bukti tidak jelas..." /></div>
+                      <Button type="submit" variant="outline" className="w-full"><X className="size-4 mr-1" /> Reject</Button>
+                    </form>
+                  </div>
                 )}
               </CardContent>
             </Card>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { ArrowLeft, UserPlus, CheckCircle2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { orderById, historyByOrder, paymentByOrder, allOrders } from "@/lib/quer
 import { packages } from "@/lib/queries/catalog";
 import { activeDesigners, allUsers } from "@/lib/queries/users";
 import { formatDate, formatIDR } from "@/lib/format";
+import { assignOrder } from "@/app/actions/admin";
 
 export default async function AdminOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -33,7 +34,12 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
   const payment = await paymentByOrder(order.id);
   const history = await historyByOrder(order.id);
 
-  async function noopAction() { "use server"; redirect(`/admin/orders/${order!.id}`); }
+  async function handleAssign(formData: FormData) {
+    "use server";
+    const orderId = String(formData.get("orderId"));
+    const designerId = String(formData.get("designer"));
+    await assignOrder(orderId, designerId);
+  }
 
   return (
     <>
@@ -43,7 +49,7 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
         <div className="space-y-6">
           <Card><CardContent className="p-6"><h2 className="font-semibold mb-4">Brief & Klien</h2><div className="grid sm:grid-cols-2 gap-4 text-sm"><Info label="Klien" value={`${client?.name} (${client?.email})`} /><Info label="Paket" value={pkg?.name ?? "Permintaan kustom"} /><Info label="Tujuan" value={order.brief.goals} full />{order.customDescription && <Info label="Deskripsi Kustom" value={order.customDescription} full />}{order.brief.styleNotes && <Info label="Style" value={order.brief.styleNotes} />}{order.brief.deadline && <Info label="Deadline" value={formatDate(order.brief.deadline)} />}</div></CardContent></Card>
           <Card><CardContent className="p-6"><h2 className="font-semibold mb-4">Aksi Admin</h2><div className="grid md:grid-cols-2 gap-4">
-            <form action={noopAction} className="space-y-2"><Label>Assign / Reassign Designer</Label><Select name="designer" defaultValue={order.designerId}><SelectTrigger><SelectValue placeholder="Pilih desainer" /></SelectTrigger><SelectContent>{designersList.map((d) => <SelectItem key={d.id} value={d.id}>{d.name} · {ordersList.filter(o => o.designerId === d.id && !["DELIVERED", "CANCELLED"].includes(o.status)).length} aktif</SelectItem>)}</SelectContent></Select><Button type="submit" className="w-full"><UserPlus className="size-4 mr-1.5" /> Assign</Button></form>
+            <form action={handleAssign} className="space-y-2"><input type="hidden" name="orderId" value={order.id} /><Label>Assign / Reassign Designer</Label><Select name="designer" defaultValue={order.designerId}><SelectTrigger><SelectValue placeholder="Pilih desainer" /></SelectTrigger><SelectContent>{designersList.map((d) => <SelectItem key={d.id} value={d.id}>{d.name} · {ordersList.filter(o => o.designerId === d.id && !["DELIVERED", "CANCELLED"].includes(o.status)).length} aktif</SelectItem>)}</SelectContent></Select><Button type="submit" className="w-full"><UserPlus className="size-4 mr-1.5" /> Assign</Button></form>
             <form action={noopAction} className="space-y-2"><Label>Catatan perubahan status</Label><Textarea rows={3} placeholder="Catatan internal / alasan perubahan..." /><div className="flex gap-2"><Button type="submit" variant="outline" className="flex-1"><RotateCcw className="size-4 mr-1" /> Revisi</Button><Button type="submit" className="flex-1"><CheckCircle2 className="size-4 mr-1" /> Delivered</Button></div></form>
           </div></CardContent></Card>
           <Card><CardContent className="p-6"><h2 className="font-semibold mb-5">Audit Trail Status</h2><OrderTimeline history={history} usersMap={userMap} /></CardContent></Card>

@@ -14,6 +14,7 @@ import {
 import { allOrders } from "@/lib/queries/orders";
 import { activeDesigners, allUsers } from "@/lib/queries/users";
 import { formatIDR, formatDate, formatDateTime, periodLabel } from "@/lib/format";
+import { processPayrollBatch } from "@/app/actions/admin";
 
 export default async function AdminPayrollPage({
   searchParams,
@@ -22,11 +23,6 @@ export default async function AdminPayrollPage({
 }) {
   await requireRole("ADMIN");
   const { period = "2026-03" } = await searchParams;
-
-  async function processBatch() {
-    "use server";
-    redirect("/admin/payroll?period=" + new Date().toISOString().slice(0, 7));
-  }
 
   const [entriesList, designersList, ordersList, usersList, batchesList] = await Promise.all([
     payrollEntries(),
@@ -39,6 +35,13 @@ export default async function AdminPayrollPage({
   const paidOut = entriesList.filter((e) => e.status === "PAID_OUT");
   const totalAccrued = accrued.reduce((s, e) => s + e.commissionAmount, 0);
   const totalPaid = paidOut.reduce((s, e) => s + e.commissionAmount, 0);
+
+  async function handleProcessBatch(formData: FormData) {
+    "use server";
+    const designerIds = formData.getAll("designerId").map(String);
+    const periodMonth = String(formData.get("periodMonth"));
+    await processPayrollBatch(designerIds, periodMonth);
+  }
 
   // Per-designer summary
   const commissionPromises = designersList.map(d => commissionByDesigner(d.id));
@@ -106,7 +109,11 @@ export default async function AdminPayrollPage({
               </p>
             </div>
             {accrued.length > 0 && (
-              <form action={processBatch}>
+              <form action={handleProcessBatch}>
+                {accrued.map((e) => (
+                  <input key={e.id} type="hidden" name="designerId" value={e.designerId} />
+                ))}
+                <input type="hidden" name="periodMonth" value={period} />
                 <Button type="submit">
                   <Banknote className="size-4 mr-1.5" />
                   Proses Payout Batch ({formatIDR(totalAccrued)})
@@ -170,20 +177,17 @@ export default async function AdminPayrollPage({
             <h2 className="font-semibold flex-1">Detail Entri Komisi</h2>
             <div className="flex gap-1 flex-wrap">
               {PERIODS.map((p) => (
-                <form key={p} action={processBatch}>
-                  <button
-                    name="period"
-                    value={p}
-                    type="submit"
-                    className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-                      period === p
-                        ? "bg-primary text-primary-foreground border-transparent"
-                        : "hover:bg-muted"
-                    }`}
-                  >
-                    {periodLabel(p)}
-                  </button>
-                </form>
+                <a
+                  key={p}
+                  href={`/admin/payroll?period=${p}`}
+                  className={`px-3 py-1 text-xs rounded-full border transition-colors ${
+                    period === p
+                      ? "bg-primary text-primary-foreground border-transparent"
+                      : "hover:bg-muted"
+                  }`}
+                >
+                  {periodLabel(p)}
+                </a>
               ))}
             </div>
           </div>
