@@ -1,12 +1,12 @@
-// Prisma 7 schema — datasource URL ada di prisma.config.ts
+// Prisma 6 schema — URL dari DATABASE_URL di .env / .env.local
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 // ── Auth.js required tables ──────────────────────────────────────────────────

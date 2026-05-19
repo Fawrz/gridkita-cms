@@ -1,0 +1,147 @@
+import { redirect } from "next/navigation";
+import { Pencil, Plus, Power } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { PageHeader } from "@/components/page-header";
+import { EntityCard } from "@/components/entity-card";
+import { ActionIconButton } from "@/components/action-icon-button";
+import { FormField } from "@/components/form-field";
+import { users } from "@/lib/mock/users";
+import { ordersByDesigner } from "@/lib/mock/orders";
+import { commissionByDesigner } from "@/lib/mock/finance";
+import { formatDate, formatIDR } from "@/lib/format";
+
+export default function AdminUsersPage() {
+  async function noopAction() {
+    "use server";
+    redirect("/admin/users");
+  }
+
+  return (
+    <>
+      <PageHeader title="Manajemen User" description="Buat akun desainer baru dan nonaktifkan akun yang tidak aktif." actions={<UserDialog action={noopAction} />} />
+
+      <div className="grid gap-3 md:hidden">
+        {users.map((u) => {
+          const workload = u.role === "DESIGNER" ? ordersByDesigner(u.id).filter((o) => !["DELIVERED", "CANCELLED"].includes(o.status)).length : null;
+          const commission = u.role === "DESIGNER" ? commissionByDesigner(u.id) : null;
+          return (
+            <EntityCard
+              key={u.id}
+              title={u.name}
+              eyebrow={u.email}
+              status={<Badge variant={u.isActive ? "success" : "inactive"}>{u.isActive ? "Aktif" : "Nonaktif"}</Badge>}
+              meta={<><Badge variant={u.role === "ADMIN" ? "default" : "outline"}>{u.role}</Badge><span className="ml-2">Joined {formatDate(u.createdAt)}</span></>}
+              value={u.role === "DESIGNER" ? `${workload} aktif / ${formatIDR(commission ?? 0)}` : "Admin"}
+            />
+          );
+        })}
+      </div>
+
+      <Card className="hidden md:flex">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-left">
+                <tr>
+                  <th className="px-4 py-3 font-medium">User</th>
+                  <th className="px-4 py-3 font-medium">Role</th>
+                  <th className="hidden px-4 py-3 font-medium md:table-cell">Joined</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 text-right font-medium">Workload/Komisi</th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {users.map((u) => {
+                  const workload = u.role === "DESIGNER" ? ordersByDesigner(u.id).filter((o) => !["DELIVERED", "CANCELLED"].includes(o.status)).length : null;
+                  const commission = u.role === "DESIGNER" ? commissionByDesigner(u.id) : null;
+                  return (
+                    <tr key={u.id} className="hover:bg-muted/30">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="size-10">
+                            <AvatarImage src={u.avatarUrl} alt={u.name} />
+                            <AvatarFallback>{u.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{u.name}</div>
+                            <div className="text-xs text-muted-foreground">{u.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3"><Badge variant={u.role === "ADMIN" ? "default" : "outline"}>{u.role}</Badge></td>
+                      <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">{formatDate(u.createdAt)}</td>
+                      <td className="px-4 py-3"><Badge variant={u.isActive ? "success" : "inactive"}>{u.isActive ? "Aktif" : "Nonaktif"}</Badge></td>
+                      <td className="px-4 py-3 text-right">
+                        {u.role === "DESIGNER" ? (
+                          <>
+                            <div className="font-medium">{workload} aktif</div>
+                            <div className="text-xs text-muted-foreground tabular-nums">{formatIDR(commission ?? 0)}</div>
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">Admin</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex justify-end gap-1.5">
+                          <UserDialog action={noopAction} editName={u.name} />
+                          <form action={noopAction}>
+                            <ActionIconButton type="submit" label={`${u.isActive ? "Nonaktifkan" : "Aktifkan"} ${u.name}`}>
+                              <Power className="size-4" aria-hidden="true" />
+                            </ActionIconButton>
+                          </form>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+    </>
+  );
+}
+
+function UserDialog({
+  action,
+  editName,
+}: {
+  action: () => Promise<void>;
+  editName?: string;
+}) {
+  const suffix = editName ? "edit" : "new";
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button size={editName ? "icon-sm" : "default"} variant={editName ? "outline" : "default"} aria-label={editName ? `Edit ${editName}` : undefined}>
+          {editName ? <Pencil className="size-4" /> : <><Plus className="size-4" /> Tambah Designer</>}
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle>{editName ? "Edit user" : "Tambah akun desainer"}</DialogTitle></DialogHeader>
+        <form action={action} className="space-y-4">
+          <FormField id={`user-name-${suffix}`} label="Nama"><Input name="name" defaultValue={editName ?? ""} /></FormField>
+          <FormField id={`user-email-${suffix}`} label="Email"><Input name="email" type="email" placeholder="designer@gridkita.id" /></FormField>
+          <div className="space-y-1.5">
+            <Label>Role</Label>
+            <Select name="role" defaultValue="DESIGNER">
+              <SelectTrigger aria-label="Role user"><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="DESIGNER">DESIGNER</SelectItem><SelectItem value="ADMIN">ADMIN</SelectItem></SelectContent>
+            </Select>
+          </div>
+          <FormField id={`user-bank-${suffix}`} label="Rekening"><Input name="bankAccount" placeholder="BCA 123... a.n. ..." /></FormField>
+          <Button type="submit" className="w-full">Simpan</Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
