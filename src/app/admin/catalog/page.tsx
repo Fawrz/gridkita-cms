@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { PageHeader } from "@/components/page-header";
 import { ImageFallback } from "@/components/image-fallback";
@@ -13,12 +14,9 @@ import { FormField } from "@/components/form-field";
 import { ActionIconButton } from "@/components/action-icon-button";
 import { categories, packages } from "@/lib/queries/catalog";
 import { formatIDR } from "@/lib/format";
-import { togglePackageActive } from "@/app/actions/cms";
+import { togglePackageActive, createCategory, createPackage } from "@/app/actions/cms";
 
 export default async function AdminCatalogPage() {
-  async function noopAction() {
-    "use server";
-  }
   async function handleTogglePackage(formData: FormData) {
     "use server";
     const packageId = String(formData.get("packageId"));
@@ -32,7 +30,7 @@ export default async function AdminCatalogPage() {
       <PageHeader
         title="CMS Katalog"
         description="Kelola kategori dan paket jasa yang tampil di halaman publik."
-        actions={<div className="flex gap-2"><CategoryDialog action={noopAction} /><PackageDialog action={noopAction} /></div>}
+        actions={<div className="flex gap-2"><CategoryDialog action={createCategory} /><PackageDialog action={createPackage} categories={categoriesList} /></div>}
       />
       <div className="grid gap-9">
         {categoriesList.map((c) => {
@@ -74,7 +72,7 @@ export default async function AdminCatalogPage() {
                           <div className="text-xs text-muted-foreground">{p.estimatedDays} hari pengerjaan</div>
                         </div>
                         <div className="flex gap-1.5">
-                          <PackageDialog action={noopAction} editTitle={p.name} />
+                          <PackageDialog action={createPackage} editTitle={p.name} categories={categoriesList} />
                           <form action={handleTogglePackage}>
                             <input type="hidden" name="packageId" value={p.id} />
                             <ActionIconButton type="submit" label={`${p.isActive ? "Nonaktifkan" : "Aktifkan"} ${p.name}`}>
@@ -95,7 +93,7 @@ export default async function AdminCatalogPage() {
   );
 }
 
-function CategoryDialog({ action }: { action: () => Promise<void> }) {
+function CategoryDialog({ action }: { action: (formData: FormData) => Promise<void> }) {
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -117,9 +115,11 @@ function CategoryDialog({ action }: { action: () => Promise<void> }) {
 function PackageDialog({
   action,
   editTitle,
+  categories = [],
 }: {
-  action: () => Promise<void>;
+  action: (formData: FormData) => Promise<void>;
   editTitle?: string;
+  categories?: Array<{ id: string; name: string }>;
 }) {
   const suffix = editTitle ? "edit" : "new";
   return (
@@ -137,6 +137,7 @@ function PackageDialog({
         <DialogHeader><DialogTitle>{editTitle ? "Edit paket" : "Tambah paket"}</DialogTitle></DialogHeader>
         <form action={action} className="space-y-4">
           <FormField id={`package-name-${suffix}`} label="Nama paket"><Input name="name" defaultValue={editTitle ?? ""} /></FormField>
+          <FormField id={`package-category-${suffix}`} label="Kategori"><Select name="categoryId"><SelectTrigger><SelectValue placeholder="Pilih kategori" /></SelectTrigger><SelectContent>{categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></FormField>
           <div className="grid grid-cols-2 gap-3">
             <FormField id={`package-price-${suffix}`} label="Harga"><Input name="price" type="number" placeholder="450000" /></FormField>
             <FormField id={`package-days-${suffix}`} label="Estimasi hari"><Input name="estimatedDays" type="number" placeholder="5" /></FormField>

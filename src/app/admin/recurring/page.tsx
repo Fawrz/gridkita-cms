@@ -15,13 +15,11 @@ import { recurringExpenses, expenseCategories } from "@/lib/queries/finance";
 import { formatIDR, formatDate } from "@/lib/format";
 import { CalendarClock, Repeat, RefreshCw } from "lucide-react";
 import { toggleRecurring, syncRecurringExpenses } from "@/app/actions/cashflow";
+import { createRecurringExpense } from "@/app/actions/cms";
 
 export default async function AdminRecurringPage() {
   await requireRole("ADMIN");
 
-  async function noopAction() {
-    "use server";
-  }
   async function handleToggleRecurring(formData: FormData) {
     "use server";
     const id = String(formData.get("id"));
@@ -52,7 +50,7 @@ export default async function AdminRecurringPage() {
                 <RefreshCw className="size-4 mr-1.5" /> Sync Recurring
               </Button>
             </form>
-            <RecurringDialog action={noopAction} categories={expenseCategoriesList} />
+            <RecurringDialog action={createRecurringExpense} categories={expenseCategoriesList} />
           </div>
         }
       />
@@ -139,7 +137,7 @@ export default async function AdminRecurringPage() {
                         </form>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <RecurringDialog action={noopAction} editItem={r} categories={expenseCategoriesList} />
+                        <RecurringDialog action={createRecurringExpense} editItem={r} categories={expenseCategoriesList} />
                       </td>
                     </tr>
                   );
@@ -165,7 +163,7 @@ function RecurringDialog({
   editItem,
   categories,
 }: {
-  action: () => Promise<void>;
+  action: (formData: FormData) => Promise<void>;
   editItem?: { name: string; amount: number; recurrenceDay: number; categoryId: string };
   categories: Array<{ id: string; name: string }>;
 }) {

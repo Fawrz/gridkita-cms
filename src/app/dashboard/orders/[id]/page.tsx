@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   Download,
@@ -31,6 +31,9 @@ import {
 import { packageById } from "@/lib/queries/catalog";
 import { userById, allUsers } from "@/lib/queries/users";
 import { formatIDR, formatDate, formatDateTime } from "@/lib/format";
+import { cancelOrder, requestRevision, confirmDelivered } from "@/app/actions/orders";
+import { uploadPaymentProof } from "@/app/actions/payments";
+import { acceptQuote } from "@/app/actions/admin";
 
 export default async function ClientOrderDetailPage({
   params,
@@ -56,9 +59,31 @@ export default async function ClientOrderDetailPage({
     order.status
   );
 
-  async function noopAction() {
+  async function handleAcceptQuote() {
     "use server";
-    redirect(`/dashboard/orders/${order!.id}`);
+    await acceptQuote(order!.id);
+  }
+  async function handleRejectQuote() {
+    "use server";
+    await cancelOrder(order!.id);
+  }
+  async function handleUploadProof(formData: FormData) {
+    "use server";
+    formData.set("orderId", order!.id);
+    await uploadPaymentProof(formData);
+  }
+  async function handleConfirmDelivered() {
+    "use server";
+    await confirmDelivered(order!.id);
+  }
+  async function handleRequestRevision(formData: FormData) {
+    "use server";
+    const note = String(formData.get("revisionNote") || "");
+    await requestRevision(order!.id, note);
+  }
+  async function handleCancel() {
+    "use server";
+    await cancelOrder(order!.id);
   }
 
   return (
@@ -90,12 +115,12 @@ export default async function ClientOrderDetailPage({
             <strong className="tabular-nums">{formatIDR(order.quotedPrice)}</strong>.
             Setujui untuk lanjut ke pembayaran, atau tolak.
             <div className="mt-3 flex gap-2">
-              <form action={noopAction}>
+              <form action={handleAcceptQuote}>
                 <Button size="sm" type="submit">
                   <Check className="size-4 mr-1" /> Setujui & Bayar
                 </Button>
               </form>
-              <form action={noopAction}>
+              <form action={handleRejectQuote}>
                 <Button size="sm" type="submit" variant="outline">
                   <X className="size-4 mr-1" /> Tolak
                 </Button>
@@ -188,7 +213,7 @@ export default async function ClientOrderDetailPage({
                     <br />
                     {formatIDR(order.finalPrice)}
                   </div>
-                  <form action={noopAction} className="space-y-3">
+                  <form action={handleUploadProof} className="space-y-3">
                     <div className="space-y-1.5">
                       <Label>Unggah bukti transfer</Label>
                       <label
@@ -197,7 +222,7 @@ export default async function ClientOrderDetailPage({
                       >
                         <Upload className="size-5 text-muted-foreground" />
                         <span className="text-xs text-muted-foreground">JPG / PNG, maks 5MB</span>
-                        <input id="proof" type="file" accept="image/*" className="hidden" />
+                        <input id="proof" name="proof" type="file" accept="image/*" className="hidden" />
                       </label>
                     </div>
                     <Button type="submit" className="w-full">
@@ -273,21 +298,14 @@ export default async function ClientOrderDetailPage({
                   Konfirmasi DELIVERED jika sudah sesuai, atau minta revisi dengan catatan.
                 </p>
                 <div className="grid sm:grid-cols-2 gap-3">
-                  <form action={noopAction}>
+                  <form action={handleConfirmDelivered}>
                     <Button type="submit" className="w-full">
                       <Check className="size-4 mr-1" /> Terima & Selesai
                     </Button>
                   </form>
-                  {canRevision && (
-                    <form action={noopAction}>
-                      <Button type="submit" variant="outline" className="w-full">
-                        <RotateCcw className="size-4 mr-1" /> Minta Revisi
-                      </Button>
-                    </form>
-                  )}
                 </div>
                 {canRevision && (
-                  <form action={noopAction} className="mt-4 space-y-2">
+                  <form action={handleRequestRevision} className="mt-4 space-y-2">
                     <Label htmlFor="revisionNote">Catatan revisi (opsional)</Label>
                     <Textarea
                       id="revisionNote"
@@ -295,6 +313,9 @@ export default async function ClientOrderDetailPage({
                       rows={3}
                       placeholder="Tolong ubah palette warna ke earth tone..."
                     />
+                    <Button type="submit" variant="outline" className="w-full">
+                      <RotateCcw className="size-4 mr-1" /> Minta Revisi
+                    </Button>
                   </form>
                 )}
               </CardContent>
@@ -310,7 +331,7 @@ export default async function ClientOrderDetailPage({
                     Anda dapat membatalkan pesanan selama belum dibayar.
                   </p>
                 </div>
-                <form action={noopAction}>
+                <form action={handleCancel}>
                   <Button type="submit" variant="outline">
                     <X className="size-4 mr-1" /> Batalkan
                   </Button>
