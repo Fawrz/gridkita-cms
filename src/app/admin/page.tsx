@@ -23,8 +23,8 @@ export default async function AdminHomePage() {
     designerRanking(),
     orderFunnel(),
   ]);
-  const userMap = new Map(usersList.map((u: { id: string; name: string }) => [u.id, u]));
-  const packageMap = new Map(packagesList.map((p: { id: string; name: string }) => [p.id, p]));
+  const userMap = new Map<string, { id: string; name: string }>(usersList.map((u: { id: string; name: string }) => [u.id, u]));
+  const packageMap = new Map<string, { id: string; name: string }>(packagesList.map((p: { id: string; name: string }) => [p.id, p]));
   const needsAction = ordersList
     .filter((o: { status: string; updatedAt: string }) => ["WAITING_VERIFICATION", "PAID", "QUOTE_REQUESTED", "DONE"].includes(o.status))
     .sort((a: { updatedAt: string }, b: { updatedAt: string }) => b.updatedAt.localeCompare(a.updatedAt))

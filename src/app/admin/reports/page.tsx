@@ -56,7 +56,7 @@ export default async function AdminReportsPage() {
       .reduce((s: number, c) => s + c.amount, 0);
     const payrollPaid = payrollEntriesList
       .filter((e: { accruedAt: string; commissionAmount: number }) => e.accruedAt.startsWith(m))
-      .reduce((s: number, e) => s + e.commissionAmount, 0);
+      .reduce((s: number, e: { commissionAmount: number }) => s + e.commissionAmount, 0);
     return {
       month: shortMonth,
       revenue: inc,
