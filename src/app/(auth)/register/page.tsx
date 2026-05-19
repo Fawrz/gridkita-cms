@@ -3,13 +3,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signInAs } from "@/app/actions/auth";
+import { registerClient } from "@/app/actions/auth";
 
 export default function RegisterPage() {
-  async function registerAction() {
+  async function registerAction(formData: FormData) {
     "use server";
-    // Mock: anggap registrasi berhasil & login as klien default
-    await signInAs("u_client1");
+    await registerClient({
+      name: String(formData.get("name")),
+      email: String(formData.get("email")),
+      phone: String(formData.get("phone")),
+      password: String(formData.get("password")),
+    });
   }
 
   return (
@@ -37,9 +41,6 @@ export default function RegisterPage() {
           <div className="space-y-1.5">
             <Label htmlFor="password">Password</Label>
             <Input id="password" name="password" type="password" placeholder="Min. 8 karakter" required />
-            <p className="text-[11px] text-muted-foreground">
-              Demo: password tidak disimpan (mock front-end).
-            </p>
           </div>
 
           <Button type="submit" className="w-full" size="lg">

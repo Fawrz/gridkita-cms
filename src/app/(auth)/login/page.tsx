@@ -4,26 +4,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { signInWithEmail, signInAs } from "@/app/actions/auth";
-import { users } from "@/lib/mock/users";
+import { signInWithCredentials } from "@/app/actions/auth";
 
 export default function LoginPage() {
   const demoAccounts = [
-    { id: "u_admin", email: "admin@gridkita.id", role: "Admin" },
-    { id: "u_designer1", email: "wahyu@gridkita.id", role: "Designer" },
-    { id: "u_client1", email: "rifat@example.com", role: "Klien" },
+    { email: "admin@gridkita.id", password: "gridkita2026", role: "Admin", name: "Firta Aulia" },
+    { email: "wahyu@gridkita.id", password: "designer123", role: "Designer", name: "Wahyu Pratama" },
+    { email: "rifat@example.com", password: "client123", role: "Klien", name: "Rifat Setiawan" },
   ];
 
   async function loginAction(formData: FormData) {
     "use server";
     const email = String(formData.get("email") ?? "");
-    await signInWithEmail(email);
+    const password = String(formData.get("password") ?? "");
+    await signInWithCredentials(email, password);
   }
 
   async function quickLogin(formData: FormData) {
     "use server";
-    const id = String(formData.get("id") ?? "");
-    await signInAs(id);
+    const email = String(formData.get("email") ?? "");
+    const password = String(formData.get("password") ?? "");
+    await signInWithCredentials(email, password);
   }
 
   return (
@@ -54,10 +55,7 @@ export default function LoginPage() {
                 Lupa password?
               </Link>
             </div>
-            <Input id="password" name="password" type="password" placeholder="Password demo" autoComplete="current-password" />
-            <p className="text-xs text-muted-foreground">
-              Demo: password tidak divalidasi (mock front-end).
-            </p>
+            <Input id="password" name="password" type="password" placeholder="Password" autoComplete="current-password" required />
           </div>
           <Button type="submit" className="w-full" size="lg">
             Masuk
@@ -71,25 +69,23 @@ export default function LoginPage() {
         </div>
 
         <div className="grid gap-2">
-          {demoAccounts.map((d) => {
-            const u = users.find((x) => x.id === d.id)!;
-            return (
-              <form key={d.id} action={quickLogin}>
-                <input type="hidden" name="id" value={d.id} />
-                <Button
-                  type="submit"
-                  variant="outline"
-                  className="h-auto w-full justify-between gap-3 py-2"
-                >
-                  <span className="flex min-w-0 items-center gap-2">
-                    <Badge variant="secondary" className="text-[10px]">{d.role}</Badge>
-                    <span className="truncate">{u.name}</span>
-                  </span>
-                  <span className="min-w-0 truncate text-xs text-muted-foreground">{d.email}</span>
-                </Button>
-              </form>
-            );
-          })}
+          {demoAccounts.map((d) => (
+            <form key={d.email} action={quickLogin}>
+              <input type="hidden" name="email" value={d.email} />
+              <input type="hidden" name="password" value={d.password} />
+              <Button
+                type="submit"
+                variant="outline"
+                className="h-auto w-full justify-between gap-3 py-2"
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <Badge variant="secondary" className="text-[10px]">{d.role}</Badge>
+                  <span className="truncate">{d.name}</span>
+                </span>
+                <span className="min-w-0 truncate text-xs text-muted-foreground">{d.email}</span>
+              </Button>
+            </form>
+          ))}
         </div>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">

@@ -1,32 +1,30 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { signIn as authSignIn, signOut as authSignOut } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { AUTH_COOKIE, dashboardPathFor } from "@/lib/auth-mock";
-import { users, userById } from "@/lib/mock/users";
+import { db } from "@/lib/db";
+import bcrypt from "bcryptjs";
+import { dashboardPathFor } from "@/lib/session";
+import type { Role } from "@/types";
 
-export async function signInAs(userId: string) {
-  const u = userById(userId);
-  if (!u) throw new Error("User tidak ditemukan");
-  const c = await cookies();
-  c.set(AUTH_COOKIE, userId, {
-    httpOnly: false,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
-  redirect(dashboardPathFor(u.role));
+export async function signInWithCredentials(email: string, password: string) {
+  await authSignIn("credentials", { email, password, redirectTo: undefined });
+  const user = await db.user.findUnique({ where: { email } });
+  if (user) redirect(dashboardPathFor(user.role as Role));
 }
 
-export async function signInWithEmail(email: string) {
-  // Mock: pick first user matching email; demo accounts are seeded
-  const u = users.find((x) => x.email.toLowerCase() === email.trim().toLowerCase());
-  if (!u) throw new Error("Email tidak terdaftar di akun demo");
-  await signInAs(u.id);
+export async function registerClient(data: {
+  name: string; email: string; phone: string; password: string;
+}) {
+  const exists = await db.user.findUnique({ where: { email: data.email } });
+  if (exists) throw new Error("Email sudah terdaftar.");
+  const hash = await bcrypt.hash(data.password, 12);
+  await db.user.create({
+    data: { email: data.email, password: hash, name: data.name, phone: data.phone, role: "CLIENT" },
+  });
+  await authSignIn("credentials", { email: data.email, password: data.password, redirectTo: "/dashboard" });
 }
 
 export async function signOut() {
-  const c = await cookies();
-  c.delete(AUTH_COOKIE);
-  redirect("/");
+  await authSignOut({ redirectTo: "/" });
 }
