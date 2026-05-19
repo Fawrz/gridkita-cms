@@ -1,7 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// Prisma 7 schema — datasource URL ada di prisma.config.ts
 
 generator client {
   provider = "prisma-client"
@@ -10,4 +7,316 @@ generator client {
 
 datasource db {
   provider = "mysql"
+}
+
+// ── Auth.js required tables ──────────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  CLIENT
+  DESIGNER
+  ADMIN
+}
+
+enum OrderStatus {
+  QUOTE_REQUESTED
+  QUOTE_OFFERED
+  PENDING_PAYMENT
+  WAITING_VERIFICATION
+  PAID
+  ASSIGNED
+  IN_PROGRESS
+  REVISION
+  DONE
+  DELIVERED
+  CANCELLED
+}
+
+enum OrderType {
+  PACKAGE
+  CUSTOM
+}
+
+enum PaymentStatus {
+  PENDING
+  WAITING
+  APPROVED
+  REJECTED
+}
+
+enum PayrollStatus {
+  ACCRUED
+  PAID_OUT
+}
+
+enum CashFlowType {
+  INCOME
+  EXPENSE
+}
+
+enum CashFlowSource {
+  ORDER_PAYMENT
+  COMMISSION_SHARE
+  RECURRING_EXPENSE
+  MANUAL
+}
+
+// ── Domain models ─────────────────────────────────────────────────────────────
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String   @db.VarChar(255)
+  name        String
+  role        Role     @default(CLIENT)
+  phone       String?
+  bankAccount String?
+  avatarUrl   String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  accounts               Account[]
+  sessions               Session[]
+  ordersAsClient         Order[]              @relation("ClientOrders")
+  ordersAsDesigner       Order[]              @relation("DesignerOrders")
+  statusChanges          OrderStatusHistory[]
+  paymentsVerified       Payment[]
+  deliverablesUploaded   Deliverable[]
+  payrollEntries         PayrollEntry[]
+  payoutBatchesProcessed PayoutBatch[]
+  cashFlowsRecorded      CashFlow[]
+  notifications          Notification[]
+  portfoliosCreated      Portfolio[]
+}
+
+model Portfolio {
+  id          String           @id @default(cuid())
+  title       String
+  description String           @db.Text
+  category    String
+  createdById String
+  createdAt   DateTime         @default(now())
+  createdBy   User             @relation(fields: [createdById], references: [id])
+  images      PortfolioImage[]
+}
+
+model PortfolioImage {
+  id          String    @id @default(cuid())
+  portfolioId String
+  path        String    @db.VarChar(500)
+  caption     String?
+  order       Int       @default(0)
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+}
+
+model ServiceCategory {
+  id               String           @id @default(cuid())
+  name             String
+  slug             String           @unique
+  description      String
+  icon             String?
+  packages         ServicePackage[]
+}
+
+model ServicePackage {
+  id            String          @id @default(cuid())
+  categoryId    String
+  name          String
+  slug          String          @unique
+  description   String          @db.Text
+  features      Json
+  basePrice     Decimal         @db.Decimal(12, 2)
+  estimatedDays Int
+  thumbnailPath String          @db.VarChar(500)
+  isActive      Boolean         @default(true)
+  isPopular     Boolean         @default(false)
+  category      ServiceCategory @relation(fields: [categoryId], references: [id])
+  orders        Order[]
+}
+
+model Order {
+  id                String      @id @default(cuid())
+  code              String      @unique
+  clientId          String
+  designerId        String?
+  type              OrderType
+  servicePackageId  String?
+  customDescription String?     @db.Text
+  quotedPrice       Decimal?    @db.Decimal(12, 2)
+  finalPrice        Decimal     @db.Decimal(12, 2) @default(0)
+  status            OrderStatus @default(PENDING_PAYMENT)
+  revisionCount     Int         @default(0)
+  briefData         Json
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  client         User                 @relation("ClientOrders", fields: [clientId], references: [id])
+  designer       User?                @relation("DesignerOrders", fields: [designerId], references: [id])
+  servicePackage ServicePackage?      @relation(fields: [servicePackageId], references: [id])
+  statusHistory  OrderStatusHistory[]
+  attachments    OrderAttachment[]
+  payment        Payment?
+  deliverables   Deliverable[]
+  payrollEntry   PayrollEntry?
+}
+
+model OrderStatusHistory {
+  id          String       @id @default(cuid())
+  orderId     String
+  fromStatus  OrderStatus?
+  toStatus    OrderStatus
+  changedById String
+  changedAt   DateTime     @default(now())
+  note        String?      @db.Text
+  order       Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  changedBy   User         @relation(fields: [changedById], references: [id])
+}
+
+model OrderAttachment {
+  id           String   @id @default(cuid())
+  orderId      String
+  path         String   @db.VarChar(500)
+  name         String
+  uploadedById String
+  kind         String
+  uploadedAt   DateTime @default(now())
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  orderId      String        @unique
+  amount       Decimal       @db.Decimal(12, 2)
+  qrisImageUrl String        @db.VarChar(500)
+  proofPath    String?       @db.VarChar(500)
+  status       PaymentStatus @default(PENDING)
+  verifiedById String?
+  verifiedAt   DateTime?
+  rejectReason String?       @db.Text
+  uploadedAt   DateTime?
+  order        Order         @relation(fields: [orderId], references: [id])
+  verifiedBy   User?         @relation(fields: [verifiedById], references: [id])
+}
+
+model Deliverable {
+  id         String   @id @default(cuid())
+  orderId    String
+  designerId String
+  path       String   @db.VarChar(500)
+  fileName   String
+  mimeType   String
+  sizeBytes  Int
+  uploadedAt DateTime @default(now())
+  order      Order    @relation(fields: [orderId], references: [id])
+  designer   User     @relation(fields: [designerId], references: [id])
+}
+
+model PayrollEntry {
+  id               String        @id @default(cuid())
+  orderId          String        @unique
+  designerId       String
+  orderTotal       Decimal       @db.Decimal(12, 2)
+  commissionAmount Decimal       @db.Decimal(12, 2)
+  companyShare     Decimal       @db.Decimal(12, 2)
+  status           PayrollStatus @default(ACCRUED)
+  accruedAt        DateTime      @default(now())
+  paidOutAt        DateTime?
+  payoutBatchId    String?
+  order            Order         @relation(fields: [orderId], references: [id])
+  designer         User          @relation(fields: [designerId], references: [id])
+  payoutBatch      PayoutBatch?  @relation(fields: [payoutBatchId], references: [id])
+}
+
+model PayoutBatch {
+  id            String         @id @default(cuid())
+  periodMonth   String
+  totalAmount   Decimal        @db.Decimal(12, 2)
+  processedById String
+  processedAt   DateTime       @default(now())
+  note          String?
+  processedBy   User           @relation(fields: [processedById], references: [id])
+  entries       PayrollEntry[]
+}
+
+model ExpenseCategory {
+  id                String             @id @default(cuid())
+  name              String
+  isOperational     Boolean            @default(false)
+  cashFlows         CashFlow[]
+  recurringExpenses RecurringExpense[]
+}
+
+model RecurringExpense {
+  id              String          @id @default(cuid())
+  categoryId      String
+  name            String
+  amount          Decimal         @db.Decimal(12, 2)
+  recurrenceDay   Int
+  isActive        Boolean         @default(true)
+  lastGeneratedAt DateTime?
+  category        ExpenseCategory @relation(fields: [categoryId], references: [id])
+  cashFlows       CashFlow[]
+}
+
+model CashFlow {
+  id                String           @id @default(cuid())
+  type              CashFlowType
+  source            CashFlowSource
+  categoryId        String?
+  amount            Decimal          @db.Decimal(12, 2)
+  description       String
+  occurredAt        DateTime         @default(now())
+  sourceOrderId     String?
+  sourceRecurringId String?
+  recordedById      String
+  category          ExpenseCategory?  @relation(fields: [categoryId], references: [id])
+  sourceRecurring   RecurringExpense? @relation(fields: [sourceRecurringId], references: [id])
+  recordedBy        User             @relation(fields: [recordedById], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String   @db.Text
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
