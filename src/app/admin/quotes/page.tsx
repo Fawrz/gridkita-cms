@@ -9,20 +9,22 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PageHeader } from "@/components/page-header";
 import { OrderStatusBadge } from "@/components/order-status-badge";
-import { orders } from "@/lib/mock/orders";
-import { userById } from "@/lib/mock/users";
+import { allOrders } from "@/lib/queries/orders";
+import { allUsers } from "@/lib/queries/users";
 import { formatDate, formatIDR } from "@/lib/format";
 
-export default function AdminQuotesPage() {
+export default async function AdminQuotesPage() {
   async function noopAction() { "use server"; redirect("/admin/quotes"); }
-  const list = orders.filter((o) => o.type === "CUSTOM").sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const [ordersList, usersList] = await Promise.all([allOrders(), allUsers()]);
+  const userMap = new Map(usersList.map(u => [u.id, u]));
+  const list = ordersList.filter((o) => o.type === "CUSTOM").sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   return (
     <>
       <PageHeader title="Permintaan Kustom & Quote" description="Tinjau kebutuhan custom, beri harga dan estimasi waktu." />
       <div className="grid gap-4">
         {list.map((o) => {
-          const client = userById(o.clientId);
+          const client = userMap.get(o.clientId);
           return (
             <Card key={o.id} className={o.status === "QUOTE_REQUESTED" ? "border-warning/50" : ""}>
               <CardContent className="p-5 grid lg:grid-cols-[1fr_360px] gap-5">

@@ -2,15 +2,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
-import { requireRole } from "@/lib/auth-mock";
-import { commissionByDesigner, payoutsByDesigner, payoutBatches } from "@/lib/mock/finance";
-import { orderById } from "@/lib/mock/orders";
+import { requireRole } from "@/lib/session";
+import { commissionByDesigner, payoutsByDesigner, payoutBatches } from "@/lib/queries/finance";
+import { allOrders } from "@/lib/queries/orders";
 import { formatIDR, formatDate, periodLabel } from "@/lib/format";
 import { Wallet, TrendingUp, CheckCircle2 } from "lucide-react";
 
 export default async function DesignerEarningsPage() {
   const me = await requireRole("DESIGNER");
-  const entries = payoutsByDesigner(me.id);
+  const entries = await payoutsByDesigner(me.id);
   const accrued = entries.filter((e) => e.status === "ACCRUED");
   const paidOut = entries.filter((e) => e.status === "PAID_OUT");
 
@@ -20,7 +20,10 @@ export default async function DesignerEarningsPage() {
 
   const now = new Date();
   const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const monthEarnings = commissionByDesigner(me.id, period);
+  const monthEarnings = await commissionByDesigner(me.id, period);
+  const allOrdersList = await allOrders();
+  const batches = await payoutBatches();
+  const orderMap = new Map(allOrdersList.map(o => [o.id, o]));
 
   return (
     <>
@@ -84,9 +87,9 @@ export default async function DesignerEarningsPage() {
                 </thead>
                 <tbody className="divide-y">
                   {entries.map((e) => {
-                    const order = orderById(e.orderId);
+                    const order = orderMap.get(e.orderId);
                     const batch = e.payoutBatchId
-                      ? payoutBatches.find((b) => b.id === e.payoutBatchId)
+                      ? batches.find((b) => b.id === e.payoutBatchId)
                       : null;
                     return (
                       <tr key={e.id} className="hover:bg-muted/30">

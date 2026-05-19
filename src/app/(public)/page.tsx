@@ -4,14 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ImageFallback } from "@/components/image-fallback";
-import { portfolios } from "@/lib/mock/portfolio";
-import { packages, categories } from "@/lib/mock/catalog";
+import { portfolios } from "@/lib/queries/portfolio";
+import { packages, categories } from "@/lib/queries/catalog";
 import { formatIDR } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-export default function HomePage() {
-  const featuredPortfolios = portfolios.slice(0, 6);
-  const popular = packages.filter((p) => p.isPopular).slice(0, 3);
+export default async function HomePage() {
+  const allPortfolios = await portfolios();
+  const featuredPortfolios = allPortfolios.slice(0, 6);
+  const allPackages = await packages();
+  const popular = allPackages.filter((p) => p.isPopular).slice(0, 3);
+  const allCategories = await categories();
 
   return (
     <>
@@ -172,7 +175,7 @@ export default function HomePage() {
           </p>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {categories.map((c) => (
+          {allCategories.map((c) => (
             <Link
               key={c.id}
               href={`/katalog?cat=${c.slug}`}
@@ -214,7 +217,7 @@ export default function HomePage() {
               </div>
               <CardContent className="p-8 flex-1 flex flex-col">
                 <div className="text-sm font-medium text-primary mb-3">
-                  {categories.find((c) => c.id === p.categoryId)?.name}
+                  {allCategories.find((c) => c.id === p.categoryId)?.name}
                 </div>
                 <h3 className="font-semibold text-2xl mb-3 leading-tight">{p.name}</h3>
                 <p className="text-muted-foreground line-clamp-2 leading-relaxed mb-8 flex-1">

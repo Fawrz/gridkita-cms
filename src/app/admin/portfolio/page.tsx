@@ -9,16 +9,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/page-header";
-import { portfolios } from "@/lib/mock/portfolio";
+import { portfolios } from "@/lib/queries/portfolio";
 import { formatDate } from "@/lib/format";
 
-export default function AdminPortfolioPage() {
+export default async function AdminPortfolioPage() {
   async function noopAction() { "use server"; redirect("/admin/portfolio"); }
+  const portfolioList = await portfolios();
   return (
     <>
       <PageHeader title="CMS Portofolio" description="Tambah, edit, dan hapus galeri karya publik." actions={<PortfolioDialog action={noopAction} />} />
       <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
-        {portfolios.map((p) => (
+        {portfolioList.map((p) => (
           <Card key={p.id} className="overflow-hidden">
             <div className="relative h-44 bg-muted"><Image src={p.coverUrl} alt={p.title} fill sizes="33vw" className="object-cover" /></div>
             <CardContent className="p-5">

@@ -18,14 +18,14 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PageHeader } from "@/components/page-header";
 import { OrderStatusBadge } from "@/components/order-status-badge";
 import { OrderTimeline } from "@/components/order-timeline";
-import { requireRole } from "@/lib/auth-mock";
+import { requireRole } from "@/lib/session";
 import {
   orderById,
   historyByOrder,
   deliverablesByOrder,
-} from "@/lib/mock/orders";
-import { packageById } from "@/lib/mock/catalog";
-import { userById } from "@/lib/mock/users";
+} from "@/lib/queries/orders";
+import { packageById } from "@/lib/queries/catalog";
+import { userById, allUsers } from "@/lib/queries/users";
 import { calculateSplit } from "@/lib/payroll";
 import { formatIDR, formatDate, formatDateTime } from "@/lib/format";
 
@@ -36,14 +36,16 @@ export default async function DesignerTaskDetailPage({
 }) {
   const me = await requireRole("DESIGNER");
   const { id } = await params;
-  const order = orderById(id);
+  const order = await orderById(id);
   if (!order || order.designerId !== me.id) notFound();
 
-  const pkg = order.servicePackageId ? packageById(order.servicePackageId) : null;
-  const client = userById(order.clientId);
-  const history = historyByOrder(order.id);
-  const deliverables = deliverablesByOrder(order.id);
+  const pkg = order.servicePackageId ? await packageById(order.servicePackageId) : null;
+  const client = await userById(order.clientId);
+  const history = await historyByOrder(order.id);
+  const deliverables = await deliverablesByOrder(order.id);
   const split = calculateSplit(order.finalPrice);
+  const usersList = await allUsers();
+  const usersMap = new Map(usersList.map(u => [u.id, u]));
 
   const canStart = order.status === "ASSIGNED";
   const canFinish = ["IN_PROGRESS", "REVISION"].includes(order.status);
@@ -201,7 +203,7 @@ export default async function DesignerTaskDetailPage({
           <Card>
             <CardContent className="p-6">
               <h2 className="font-semibold mb-5">Riwayat Status</h2>
-              <OrderTimeline history={history} />
+              <OrderTimeline history={history} usersMap={usersMap} />
             </CardContent>
           </Card>
         </div>

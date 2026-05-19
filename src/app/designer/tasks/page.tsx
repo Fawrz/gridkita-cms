@@ -5,10 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { OrderStatusBadge } from "@/components/order-status-badge";
 import { EntityCard } from "@/components/entity-card";
-import { requireRole } from "@/lib/auth-mock";
-import { ordersByDesigner } from "@/lib/mock/orders";
-import { packageById } from "@/lib/mock/catalog";
-import { userById } from "@/lib/mock/users";
+import { requireRole } from "@/lib/session";
+import { ordersByDesigner } from "@/lib/queries/orders";
+import { packages } from "@/lib/queries/catalog";
+import { allUsers } from "@/lib/queries/users";
 import { formatIDR, formatDate } from "@/lib/format";
 import type { OrderStatus } from "@/types";
 
@@ -26,7 +26,11 @@ export default async function DesignerTasksPage({
   const me = await requireRole("DESIGNER");
   const { tab = "todo" } = await searchParams;
   const t = TABS.find((x) => x.key === tab) ?? TABS[0];
-  let list = ordersByDesigner(me.id);
+  let list = await ordersByDesigner(me.id);
+  const allPackages = await packages();
+  const usersList = await allUsers();
+  const packageMap = new Map(allPackages.map(p => [p.id, p]));
+  const userMap = new Map(usersList.map(u => [u.id, u]));
   if (t.match) list = list.filter((o) => t.match!.includes(o.status));
   list = [...list].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 
@@ -61,8 +65,8 @@ export default async function DesignerTasksPage({
         <>
           <div className="grid gap-3 md:hidden">
             {list.map((o) => {
-              const client = userById(o.clientId);
-              const pkg = o.servicePackageId ? packageById(o.servicePackageId) : null;
+              const client = userMap.get(o.clientId);
+              const pkg = o.servicePackageId ? packageMap.get(o.servicePackageId) : null;
               const commission = Math.round(o.finalPrice * 0.7);
               return (
                 <EntityCard
@@ -100,8 +104,8 @@ export default async function DesignerTasksPage({
                   </thead>
                   <tbody className="divide-y">
                     {list.map((o) => {
-                      const client = userById(o.clientId);
-                      const pkg = o.servicePackageId ? packageById(o.servicePackageId) : null;
+                      const client = userMap.get(o.clientId);
+                      const pkg = o.servicePackageId ? packageMap.get(o.servicePackageId) : null;
                       const commission = Math.round(o.finalPrice * 0.7);
                       return (
                         <tr key={o.id} className="hover:bg-muted/30">

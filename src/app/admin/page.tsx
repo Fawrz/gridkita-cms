@@ -5,15 +5,27 @@ import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { OrderStatusBadge } from "@/components/order-status-badge";
-import { orders } from "@/lib/mock/orders";
-import { userById } from "@/lib/mock/users";
-import { packageById } from "@/lib/mock/catalog";
+import { allOrders } from "@/lib/queries/orders";
+import { allUsers } from "@/lib/queries/users";
+import { packages } from "@/lib/queries/catalog";
 import { formatIDR, relativeTime } from "@/lib/format";
-import { adminKpis, monthlyFinance, expenseBreakdown, designerRanking, orderFunnel } from "@/lib/mock/analytics";
+import { adminKpis, monthlyFinance, expenseBreakdown, designerRanking, orderFunnel } from "@/lib/queries/analytics";
 import { DesignerBarChart, ExpensePieChart, FinanceLineChart, FunnelBarChart } from "@/components/charts/admin-charts";
 
-export default function AdminHomePage() {
-  const needsAction = orders
+export default async function AdminHomePage() {
+  const [ordersList, usersList, packagesList, kpis, finance, expenses, ranking, funnel] = await Promise.all([
+    allOrders(),
+    allUsers(),
+    packages(),
+    adminKpis(),
+    monthlyFinance(),
+    expenseBreakdown(),
+    designerRanking(),
+    orderFunnel(),
+  ]);
+  const userMap = new Map(usersList.map(u => [u.id, u]));
+  const packageMap = new Map(packagesList.map(p => [p.id, p]));
+  const needsAction = ordersList
     .filter((o) => ["WAITING_VERIFICATION", "PAID", "QUOTE_REQUESTED", "DONE"].includes(o.status))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .slice(0, 6);
@@ -27,17 +39,17 @@ export default function AdminHomePage() {
       />
 
       <div className="grid gap-4 grid-cols-2 xl:grid-cols-4 mb-6">
-        <StatCard label="Revenue Delivered" value={formatIDR(adminKpis.revenue)} icon={TrendingUp} tone="success" trend={{ value: 18, positive: true }} className="col-span-2 xl:col-span-2" />
-        <StatCard label="Order Aktif" value={adminKpis.activeOrders} icon={ShoppingCart} tone="primary" hint="butuh monitoring" />
-        <StatCard label="Verifikasi Bayar" value={adminKpis.waitingPayments} icon={CreditCard} tone="warning" hint="menunggu admin" />
-        <StatCard label="Payroll Accrued" value={formatIDR(adminKpis.accruedPayroll)} icon={Wallet} tone="info" className="col-span-2 xl:col-span-2" />
+        <StatCard label="Revenue Delivered" value={formatIDR(kpis.revenue)} icon={TrendingUp} tone="success" trend={{ value: 18, positive: true }} className="col-span-2 xl:col-span-2" />
+        <StatCard label="Order Aktif" value={kpis.activeOrders} icon={ShoppingCart} tone="primary" hint="butuh monitoring" />
+        <StatCard label="Verifikasi Bayar" value={kpis.waitingPayments} icon={CreditCard} tone="warning" hint="menunggu admin" />
+        <StatCard label="Payroll Accrued" value={formatIDR(kpis.accruedPayroll)} icon={Wallet} tone="info" className="col-span-2 xl:col-span-2" />
       </div>
 
       <div className="grid xl:grid-cols-2 gap-4 mb-6">
-        <FinanceLineChart data={monthlyFinance} />
-        <ExpensePieChart data={expenseBreakdown} />
-        <DesignerBarChart data={designerRanking} />
-        <FunnelBarChart data={orderFunnel} />
+        <FinanceLineChart data={finance} />
+        <ExpensePieChart data={expenses} />
+        <DesignerBarChart data={ranking} />
+        <FunnelBarChart data={funnel} />
       </div>
 
       <Card>
@@ -51,8 +63,8 @@ export default function AdminHomePage() {
           </div>
           <ul className="divide-y">
             {needsAction.map((o) => {
-              const client = userById(o.clientId);
-              const pkg = o.servicePackageId ? packageById(o.servicePackageId) : null;
+              const client = userMap.get(o.clientId);
+              const pkg = o.servicePackageId ? packageMap.get(o.servicePackageId) : null;
               return (
                 <li key={o.id}>
                   <Link href={`/admin/orders/${o.id}`} className="p-4 hover:bg-muted/50 transition-colors flex items-center justify-between gap-4">

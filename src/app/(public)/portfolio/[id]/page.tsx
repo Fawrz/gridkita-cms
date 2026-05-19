@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ImageFallback } from "@/components/image-fallback";
-import { portfolioById, portfolios } from "@/lib/mock/portfolio";
+import { portfolioById, portfolios } from "@/lib/queries/portfolio";
 import { formatDate } from "@/lib/format";
 
 export default async function PortfolioDetailPage({
@@ -13,10 +13,11 @@ export default async function PortfolioDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const item = portfolioById(id);
+  const item = await portfolioById(id);
   if (!item) notFound();
 
-  const related = portfolios.filter((p) => p.category === item.category && p.id !== item.id).slice(0, 3);
+  const allPortfolios = await portfolios();
+  const related = allPortfolios.filter((p) => p.category === item.category && p.id !== item.id).slice(0, 3);
 
   return (
     <article className="container mx-auto px-4 py-10 md:py-16">

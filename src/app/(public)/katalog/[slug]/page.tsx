@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ImageFallback } from "@/components/image-fallback";
-import { categoryById, packageBySlug, packages } from "@/lib/mock/catalog";
+import { categoryById, packageBySlug, packages } from "@/lib/queries/catalog";
 import { formatIDR } from "@/lib/format";
 
 export default async function PackageDetailPage({
@@ -14,10 +14,11 @@ export default async function PackageDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const pkg = packageBySlug(slug);
+  const pkg = await packageBySlug(slug);
   if (!pkg) notFound();
-  const category = categoryById(pkg.categoryId);
-  const related = packages
+  const category = await categoryById(pkg.categoryId);
+  const allPackages = await packages();
+  const related = allPackages
     .filter((p) => p.categoryId === pkg.categoryId && p.id !== pkg.id && p.isActive)
     .slice(0, 3);
 

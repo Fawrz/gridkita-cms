@@ -6,9 +6,9 @@ import { PageHeader } from "@/components/page-header";
 import { OrderStatusBadge } from "@/components/order-status-badge";
 import { PageToolbar } from "@/components/page-toolbar";
 import { EntityCard } from "@/components/entity-card";
-import { orders } from "@/lib/mock/orders";
-import { packageById } from "@/lib/mock/catalog";
-import { userById } from "@/lib/mock/users";
+import { allOrders } from "@/lib/queries/orders";
+import { packages } from "@/lib/queries/catalog";
+import { allUsers } from "@/lib/queries/users";
 import { formatIDR, formatDate } from "@/lib/format";
 import type { OrderStatus } from "@/types";
 
@@ -27,7 +27,14 @@ export default async function AdminOrdersPage({
 }) {
   const { filter = "all" } = await searchParams;
   const f = FILTERS.find((x) => x.key === filter) ?? FILTERS[0];
-  let list = [...orders];
+  const [ordersList, usersList, packagesList] = await Promise.all([
+    allOrders(),
+    allUsers(),
+    packages(),
+  ]);
+  const userMap = new Map(usersList.map(u => [u.id, u]));
+  const packageMap = new Map(packagesList.map(p => [p.id, p]));
+  let list = [...ordersList];
   if (f.match) list = list.filter((o) => f.match!.includes(o.status));
   list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 
@@ -47,9 +54,9 @@ export default async function AdminOrdersPage({
 
       <div className="grid gap-3 md:hidden">
         {list.map((o) => {
-          const client = userById(o.clientId);
-          const designer = o.designerId ? userById(o.designerId) : null;
-          const pkg = o.servicePackageId ? packageById(o.servicePackageId) : null;
+          const client = userMap.get(o.clientId);
+          const designer = o.designerId ? userMap.get(o.designerId) : null;
+          const pkg = o.servicePackageId ? packageMap.get(o.servicePackageId) : null;
           return (
             <EntityCard
               key={o.id}
@@ -89,9 +96,9 @@ export default async function AdminOrdersPage({
               </thead>
               <tbody className="divide-y">
                 {list.map((o) => {
-                  const client = userById(o.clientId);
-                  const designer = o.designerId ? userById(o.designerId) : null;
-                  const pkg = o.servicePackageId ? packageById(o.servicePackageId) : null;
+                  const client = userMap.get(o.clientId);
+                  const designer = o.designerId ? userMap.get(o.designerId) : null;
+                  const pkg = o.servicePackageId ? packageMap.get(o.servicePackageId) : null;
                   return (
                     <tr key={o.id} className="transition-colors hover:bg-muted/40">
                       <td className="px-4 py-3">

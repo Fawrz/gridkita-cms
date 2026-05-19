@@ -4,7 +4,7 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { RoleSwitcher } from "@/components/role-switcher";
-import { getCurrentUser } from "@/lib/auth-mock";
+import { getCurrentUser } from "@/lib/session";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 

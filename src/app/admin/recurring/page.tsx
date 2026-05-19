@@ -11,8 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { EntityCard } from "@/components/entity-card";
-import { requireRole } from "@/lib/auth-mock";
-import { recurringExpenses, expenseCategories } from "@/lib/mock/finance";
+import { requireRole } from "@/lib/session";
+import { recurringExpenses, expenseCategories } from "@/lib/queries/finance";
 import { formatIDR, formatDate } from "@/lib/format";
 import { CalendarClock, Repeat } from "lucide-react";
 
@@ -24,7 +24,11 @@ export default async function AdminRecurringPage() {
     redirect("/admin/recurring");
   }
 
-  const activeList = recurringExpenses.filter((r) => r.isActive);
+  const [recurringExpensesList, expenseCategoriesList] = await Promise.all([
+    recurringExpenses(),
+    expenseCategories(),
+  ]);
+  const activeList = recurringExpensesList.filter((r) => r.isActive);
   const monthlyTotal = activeList.reduce((s, r) => s + r.amount, 0);
 
   return (
@@ -33,7 +37,7 @@ export default async function AdminRecurringPage() {
         title="Pengeluaran Rutin"
         description="Template pengeluaran berulang otomatis (WiFi, software). Bersifat idempoten: aman dipanggil berkali-kali."
         actions={
-          <RecurringDialog action={noopAction} />
+          <RecurringDialog action={noopAction} categories={expenseCategoriesList} />
         }
       />
 
@@ -47,9 +51,9 @@ export default async function AdminRecurringPage() {
         />
         <StatCard
           label="Total Items"
-          value={recurringExpenses.length}
+          value={recurringExpensesList.length}
           icon={Repeat}
-          hint={`${recurringExpenses.filter((r) => !r.isActive).length} nonaktif`}
+          hint={`${recurringExpensesList.filter((r) => !r.isActive).length} nonaktif`}
         />
         <StatCard
           label="Estimasi Tahunan"
@@ -59,8 +63,8 @@ export default async function AdminRecurringPage() {
       </div>
 
       <div className="grid gap-3 md:hidden">
-        {recurringExpenses.map((r) => {
-          const cat = expenseCategories.find((c) => c.id === r.categoryId);
+        {recurringExpensesList.map((r) => {
+          const cat = expenseCategoriesList.find((c) => c.id === r.categoryId);
           return (
             <EntityCard
               key={r.id}
@@ -92,8 +96,8 @@ export default async function AdminRecurringPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {recurringExpenses.map((r) => {
-                  const cat = expenseCategories.find((c) => c.id === r.categoryId);
+                {recurringExpensesList.map((r) => {
+                  const cat = expenseCategoriesList.find((c) => c.id === r.categoryId);
                   return (
                     <tr key={r.id} className="hover:bg-muted/30">
                       <td className="px-4 py-3 font-medium">{r.name}</td>
@@ -118,7 +122,7 @@ export default async function AdminRecurringPage() {
                         </form>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <RecurringDialog action={noopAction} editItem={r} />
+                        <RecurringDialog action={noopAction} editItem={r} categories={expenseCategoriesList} />
                       </td>
                     </tr>
                   );
@@ -142,9 +146,11 @@ export default async function AdminRecurringPage() {
 function RecurringDialog({
   action,
   editItem,
+  categories,
 }: {
   action: () => Promise<void>;
   editItem?: { name: string; amount: number; recurrenceDay: number; categoryId: string };
+  categories: Array<{ id: string; name: string }>;
 }) {
   return (
     <Dialog>
@@ -185,7 +191,7 @@ function RecurringDialog({
                 <SelectValue placeholder="Pilih kategori" />
               </SelectTrigger>
               <SelectContent>
-                {expenseCategories.map((c) => (
+                {categories.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
                   </SelectItem>

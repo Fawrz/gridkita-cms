@@ -11,14 +11,15 @@ import { PageHeader } from "@/components/page-header";
 import { ImageFallback } from "@/components/image-fallback";
 import { FormField } from "@/components/form-field";
 import { ActionIconButton } from "@/components/action-icon-button";
-import { categories, packages } from "@/lib/mock/catalog";
+import { categories, packages } from "@/lib/queries/catalog";
 import { formatIDR } from "@/lib/format";
 
-export default function AdminCatalogPage() {
+export default async function AdminCatalogPage() {
   async function noopAction() {
     "use server";
     redirect("/admin/catalog");
   }
+  const [categoriesList, packagesList] = await Promise.all([categories(), packages()]);
 
   return (
     <>
@@ -28,8 +29,8 @@ export default function AdminCatalogPage() {
         actions={<div className="flex gap-2"><CategoryDialog action={noopAction} /><PackageDialog action={noopAction} /></div>}
       />
       <div className="grid gap-9">
-        {categories.map((c) => {
-          const list = packages.filter((p) => p.categoryId === c.id);
+        {categoriesList.map((c) => {
+          const list = packagesList.filter((p) => p.categoryId === c.id);
           return (
             <section key={c.id}>
               <div className="mb-4 flex items-end justify-between gap-3">

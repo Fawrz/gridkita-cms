@@ -8,21 +8,25 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/page-header";
-import { payments, orderById } from "@/lib/mock/orders";
-import { userById } from "@/lib/mock/users";
+import { payments } from "@/lib/queries/orders";
+import { allOrders } from "@/lib/queries/orders";
+import { allUsers } from "@/lib/queries/users";
 import { formatDateTime, formatIDR } from "@/lib/format";
 
-export default function AdminPaymentsPage() {
+export default async function AdminPaymentsPage() {
   async function noopAction() { "use server"; redirect("/admin/payments"); }
-  const list = [...payments].sort((a, b) => (b.uploadedAt ?? "").localeCompare(a.uploadedAt ?? ""));
+  const [paymentsList, ordersList, usersList] = await Promise.all([payments(), allOrders(), allUsers()]);
+  const orderMap = new Map(ordersList.map(o => [o.id, o]));
+  const userMap = new Map(usersList.map(u => [u.id, u]));
+  const list = [...paymentsList].sort((a, b) => (b.uploadedAt ?? "").localeCompare(a.uploadedAt ?? ""));
 
   return (
     <>
       <PageHeader title="Verifikasi Pembayaran" description="Approve atau reject bukti transfer QRIS yang diunggah klien." />
       <div className="grid lg:grid-cols-2 gap-4">
         {list.map((p) => {
-          const order = orderById(p.orderId);
-          const client = order ? userById(order.clientId) : null;
+          const order = orderMap.get(p.orderId);
+          const client = order ? userMap.get(order.clientId) : null;
           return (
             <Card key={p.id} className={p.status === "WAITING" ? "border-warning/50" : ""}>
               <CardContent className="p-5">

@@ -5,15 +5,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { OrderStatusBadge } from "@/components/order-status-badge";
-import { requireRole } from "@/lib/auth-mock";
-import { ordersByDesigner } from "@/lib/mock/orders";
-import { commissionByDesigner } from "@/lib/mock/finance";
-import { packageById } from "@/lib/mock/catalog";
+import { requireRole } from "@/lib/session";
+import { ordersByDesigner } from "@/lib/queries/orders";
+import { commissionByDesigner } from "@/lib/queries/finance";
+import { packages } from "@/lib/queries/catalog";
 import { formatIDR, relativeTime } from "@/lib/format";
 
 export default async function DesignerHome() {
   const me = await requireRole("DESIGNER");
-  const all = ordersByDesigner(me.id);
+  const all = await ordersByDesigner(me.id);
+  const allPackages = await packages();
+  const packageMap = new Map(allPackages.map(p => [p.id, p]));
   const todo = all.filter(
     (o) => !["DELIVERED", "CANCELLED"].includes(o.status)
   );
@@ -22,8 +24,8 @@ export default async function DesignerHome() {
 
   const now = new Date();
   const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const monthEarnings = commissionByDesigner(me.id, period);
-  const totalEarnings = commissionByDesigner(me.id);
+  const monthEarnings = await commissionByDesigner(me.id, period);
+  const totalEarnings = await commissionByDesigner(me.id);
 
   return (
     <>
@@ -88,7 +90,7 @@ export default async function DesignerHome() {
           ) : (
             <ul className="divide-y">
               {todo.map((o) => {
-                const pkg = o.servicePackageId ? packageById(o.servicePackageId) : null;
+                const pkg = o.servicePackageId ? packageMap.get(o.servicePackageId) : null;
                 return (
                   <li key={o.id}>
                     <Link

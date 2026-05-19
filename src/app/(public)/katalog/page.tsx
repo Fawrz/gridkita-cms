@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ImageFallback } from "@/components/image-fallback";
-import { categories, packages } from "@/lib/mock/catalog";
+import { categories, packages } from "@/lib/queries/catalog";
 import { PageHeader } from "@/components/page-header";
 import { formatIDR } from "@/lib/format";
 import { ArrowRight, Clock, Sparkles } from "lucide-react";
@@ -14,6 +14,8 @@ export default async function KatalogPage({
   searchParams: Promise<{ cat?: string }>;
 }) {
   const { cat } = await searchParams;
+  const allCategories = await categories();
+  const allPackages = await packages();
 
   return (
     <div className="container mx-auto px-4 py-12 md:py-16">
@@ -35,7 +37,7 @@ export default async function KatalogPage({
             Semua
           </Badge>
         </Link>
-        {categories.map((c) => (
+        {allCategories.map((c) => (
           <Link key={c.id} href={`/katalog?cat=${c.slug}`} scroll={false}>
             <Badge
               variant={cat === c.slug ? "default" : "outline"}
@@ -47,10 +49,10 @@ export default async function KatalogPage({
         ))}
       </div>
 
-      {categories
+      {allCategories
         .filter((c) => !cat || c.slug === cat)
         .map((c) => {
-          const list = packages.filter((p) => p.categoryId === c.id && p.isActive);
+          const list = allPackages.filter((p) => p.categoryId === c.id && p.isActive);
           if (list.length === 0) return null;
           return (
             <section key={c.id} className="mb-12 last:mb-0">

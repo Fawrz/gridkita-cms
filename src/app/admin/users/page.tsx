@@ -12,12 +12,34 @@ import { PageHeader } from "@/components/page-header";
 import { EntityCard } from "@/components/entity-card";
 import { ActionIconButton } from "@/components/action-icon-button";
 import { FormField } from "@/components/form-field";
-import { users } from "@/lib/mock/users";
-import { ordersByDesigner } from "@/lib/mock/orders";
-import { commissionByDesigner } from "@/lib/mock/finance";
+import { allUsers } from "@/lib/queries/users";
+import { allOrders } from "@/lib/queries/orders";
+import { commissionByDesigner } from "@/lib/queries/finance";
 import { formatDate, formatIDR } from "@/lib/format";
 
-export default function AdminUsersPage() {
+export default async function AdminUsersPage() {
+  const [usersList, ordersList] = await Promise.all([
+    allUsers(),
+    allOrders(),
+  ]);
+  const commissionPromises = usersList
+    .filter(u => u.role === "DESIGNER")
+    .map(u => commissionByDesigner(u.id));
+  const commissions = await Promise.all(commissionPromises);
+  const commissionMap = new Map(
+    usersList
+      .filter(u => u.role === "DESIGNER")
+      .map((u, i) => [u.id, commissions[i]])
+  );
+  const workloadMap = new Map(
+    usersList
+      .filter(u => u.role === "DESIGNER")
+      .map(u => [
+        u.id,
+        ordersList.filter(o => o.designerId === u.id && !["DELIVERED", "CANCELLED"].includes(o.status)).length
+      ])
+  );
+
   async function noopAction() {
     "use server";
     redirect("/admin/users");
@@ -28,9 +50,9 @@ export default function AdminUsersPage() {
       <PageHeader title="Manajemen User" description="Buat akun desainer baru dan nonaktifkan akun yang tidak aktif." actions={<UserDialog action={noopAction} />} />
 
       <div className="grid gap-3 md:hidden">
-        {users.map((u) => {
-          const workload = u.role === "DESIGNER" ? ordersByDesigner(u.id).filter((o) => !["DELIVERED", "CANCELLED"].includes(o.status)).length : null;
-          const commission = u.role === "DESIGNER" ? commissionByDesigner(u.id) : null;
+        {usersList.map((u) => {
+          const workload = workloadMap.get(u.id) ?? null;
+          const commission = commissionMap.get(u.id) ?? null;
           return (
             <EntityCard
               key={u.id}
@@ -59,9 +81,9 @@ export default function AdminUsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {users.map((u) => {
-                  const workload = u.role === "DESIGNER" ? ordersByDesigner(u.id).filter((o) => !["DELIVERED", "CANCELLED"].includes(o.status)).length : null;
-                  const commission = u.role === "DESIGNER" ? commissionByDesigner(u.id) : null;
+                {usersList.map((u) => {
+                  const workload = workloadMap.get(u.id) ?? null;
+                  const commission = commissionMap.get(u.id) ?? null;
                   return (
                     <tr key={u.id} className="hover:bg-muted/30">
                       <td className="px-4 py-3">

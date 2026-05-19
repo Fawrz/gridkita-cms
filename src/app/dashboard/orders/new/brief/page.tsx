@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageFallback } from "@/components/image-fallback";
-import { packageBySlug } from "@/lib/mock/catalog";
+import { packageBySlug } from "@/lib/queries/catalog";
 import { formatIDR } from "@/lib/format";
 
 export default async function BriefPage({
@@ -18,7 +18,7 @@ export default async function BriefPage({
 }) {
   const { pkg, type } = await searchParams;
   const isCustom = type === "custom";
-  const pkgItem = pkg ? packageBySlug(pkg) : null;
+  const pkgItem = pkg ? await packageBySlug(pkg) : null;
   if (!isCustom && !pkgItem) redirect("/dashboard/orders/new");
 
   async function submitBrief() {

@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { ImageFallback } from "@/components/image-fallback";
-import { categories, packages } from "@/lib/mock/catalog";
+import { categories, packages } from "@/lib/queries/catalog";
 import { formatIDR } from "@/lib/format";
 
 export default async function NewOrderPage({
@@ -15,6 +15,8 @@ export default async function NewOrderPage({
 }) {
   const { type } = await searchParams;
   const isCustom = type === "custom";
+  const allCategories = await categories();
+  const allPackages = await packages();
 
   return (
     <>
@@ -57,8 +59,8 @@ export default async function NewOrderPage({
             </CardContent>
           </Card>
 
-          {categories.map((c) => {
-            const list = packages.filter(
+          {allCategories.map((c) => {
+            const list = allPackages.filter(
               (p) => p.categoryId === c.id && p.isActive
             );
             if (!list.length) return null;

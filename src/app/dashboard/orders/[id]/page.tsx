@@ -21,15 +21,15 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PageHeader } from "@/components/page-header";
 import { OrderStatusBadge } from "@/components/order-status-badge";
 import { OrderTimeline } from "@/components/order-timeline";
-import { requireRole } from "@/lib/auth-mock";
+import { requireRole } from "@/lib/session";
 import {
   orderById,
   historyByOrder,
   paymentByOrder,
   deliverablesByOrder,
-} from "@/lib/mock/orders";
-import { packageById } from "@/lib/mock/catalog";
-import { userById } from "@/lib/mock/users";
+} from "@/lib/queries/orders";
+import { packageById } from "@/lib/queries/catalog";
+import { userById, allUsers } from "@/lib/queries/users";
 import { formatIDR, formatDate, formatDateTime } from "@/lib/format";
 
 export default async function ClientOrderDetailPage({
@@ -39,13 +39,15 @@ export default async function ClientOrderDetailPage({
 }) {
   const me = await requireRole("CLIENT");
   const { id } = await params;
-  const order = orderById(id);
+  const order = await orderById(id);
   if (!order || order.clientId !== me.id) notFound();
-  const pkg = order.servicePackageId ? packageById(order.servicePackageId) : null;
-  const designer = order.designerId ? userById(order.designerId) : null;
-  const payment = paymentByOrder(order.id);
-  const history = historyByOrder(order.id);
-  const deliverables = deliverablesByOrder(order.id);
+  const pkg = order.servicePackageId ? await packageById(order.servicePackageId) : null;
+  const designer = order.designerId ? await userById(order.designerId) : null;
+  const payment = await paymentByOrder(order.id);
+  const history = await historyByOrder(order.id);
+  const deliverables = await deliverablesByOrder(order.id);
+  const allUsersList = await allUsers();
+  const userMap = new Map(allUsersList.map(u => [u.id, u]));
 
   const showQris = order.status === "PENDING_PAYMENT";
   const canConfirmDone = order.status === "DONE";
@@ -321,7 +323,7 @@ export default async function ClientOrderDetailPage({
           <Card>
             <CardContent className="p-6">
               <h2 className="font-semibold mb-5">Riwayat Status</h2>
-              <OrderTimeline history={history} />
+              <OrderTimeline history={history} usersMap={userMap} />
             </CardContent>
           </Card>
         </div>

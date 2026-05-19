@@ -12,14 +12,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { OrderStatusBadge } from "@/components/order-status-badge";
-import { requireRole } from "@/lib/auth-mock";
-import { ordersByClient } from "@/lib/mock/orders";
-import { packageById } from "@/lib/mock/catalog";
+import { requireRole } from "@/lib/session";
+import { ordersByClient } from "@/lib/queries/orders";
+import { packages } from "@/lib/queries/catalog";
 import { formatIDR, relativeTime } from "@/lib/format";
 
 export default async function ClientHome() {
   const me = await requireRole("CLIENT");
-  const myOrders = ordersByClient(me.id);
+  const myOrders = await ordersByClient(me.id);
+  const allPackages = await packages();
+  const packageMap = new Map(allPackages.map(p => [p.id, p]));
   const active = myOrders.filter(
     (o) => !["DELIVERED", "CANCELLED"].includes(o.status)
   );
@@ -99,7 +101,7 @@ export default async function ClientHome() {
           ) : (
             <ul className="divide-y">
               {recent.map((o) => {
-                const pkg = o.servicePackageId ? packageById(o.servicePackageId) : null;
+                const pkg = o.servicePackageId ? packageMap.get(o.servicePackageId) : null;
                 return (
                   <li key={o.id}>
                     <Link

@@ -15,7 +15,7 @@ function toOrder(o: PrismaOrder): Order {
     finalPrice: Number(o.finalPrice),
     status: o.status as Order["status"],
     revisionCount: o.revisionCount,
-    brief: o.briefData as Order["brief"],
+    brief: o.briefData as unknown as Order["brief"],
     attachments: o.attachments.map((a) => ({
       id: a.id, orderId: a.orderId, url: `/api/files/${a.id}`,
       name: a.name, uploadedById: a.uploadedById,
@@ -91,5 +91,19 @@ export async function deliverablesByOrder(orderId: string): Promise<Deliverable[
     fileName: d.fileName, url: `/api/files/deliverable-${d.id}`,
     mimeType: d.mimeType, sizeBytes: d.sizeBytes,
     uploadedAt: d.uploadedAt.toISOString(),
+  }));
+}
+
+export async function payments(): Promise<Payment[]> {
+  const list = await db.payment.findMany({ orderBy: { uploadedAt: "desc" } });
+  return list.map((p) => ({
+    id: p.id, orderId: p.orderId, amount: Number(p.amount),
+    qrisImageUrl: p.qrisImageUrl,
+    proofImageUrl: p.proofPath ? `/api/files/proof-${p.id}` : undefined,
+    status: p.status as Payment["status"],
+    verifiedById: p.verifiedById ?? undefined,
+    verifiedAt: p.verifiedAt?.toISOString(),
+    rejectReason: p.rejectReason ?? undefined,
+    uploadedAt: p.uploadedAt?.toISOString(),
   }));
 }

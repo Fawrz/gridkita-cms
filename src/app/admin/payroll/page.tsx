@@ -5,14 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
-import { requireRole } from "@/lib/auth-mock";
+import { requireRole } from "@/lib/session";
 import {
   payrollEntries,
   payoutBatches,
   commissionByDesigner,
-} from "@/lib/mock/finance";
-import { orderById } from "@/lib/mock/orders";
-import { activeDesigners, userById } from "@/lib/mock/users";
+} from "@/lib/queries/finance";
+import { allOrders } from "@/lib/queries/orders";
+import { activeDesigners, allUsers } from "@/lib/queries/users";
 import { formatIDR, formatDate, formatDateTime, periodLabel } from "@/lib/format";
 
 export default async function AdminPayrollPage({
@@ -28,22 +28,33 @@ export default async function AdminPayrollPage({
     redirect("/admin/payroll?period=" + new Date().toISOString().slice(0, 7));
   }
 
-  const accrued = payrollEntries.filter((e) => e.status === "ACCRUED");
-  const paidOut = payrollEntries.filter((e) => e.status === "PAID_OUT");
+  const [entriesList, designersList, ordersList, usersList, batchesList] = await Promise.all([
+    payrollEntries(),
+    activeDesigners(),
+    allOrders(),
+    allUsers(),
+    payoutBatches(),
+  ]);
+  const accrued = entriesList.filter((e) => e.status === "ACCRUED");
+  const paidOut = entriesList.filter((e) => e.status === "PAID_OUT");
   const totalAccrued = accrued.reduce((s, e) => s + e.commissionAmount, 0);
   const totalPaid = paidOut.reduce((s, e) => s + e.commissionAmount, 0);
 
   // Per-designer summary
-  const designerSummary = activeDesigners().map((d) => {
-    const entries = payrollEntries.filter((e) => e.designerId === d.id);
+  const commissionPromises = designersList.map(d => commissionByDesigner(d.id));
+  const commissions = await Promise.all(commissionPromises);
+  const designerSummary = designersList.map((d, i) => {
+    const entries = entriesList.filter((e) => e.designerId === d.id);
     const unpaid = entries.filter((e) => e.status === "ACCRUED");
     return {
       designer: d,
       unpaidCount: unpaid.length,
       unpaidAmount: unpaid.reduce((s, e) => s + e.commissionAmount, 0),
-      totalAmount: commissionByDesigner(d.id),
+      totalAmount: commissions[i],
     };
   });
+  const orderMap = new Map(ordersList.map(o => [o.id, o]));
+  const userMap = new Map(usersList.map(u => [u.id, u]));
 
   const PERIODS = ["2026-03", "2026-02", "2026-01"];
 
@@ -72,7 +83,7 @@ export default async function AdminPayrollPage({
         />
         <StatCard
           label="Desainer Aktif"
-          value={activeDesigners().length}
+          value={designersList.length}
           icon={Users2}
           tone="primary"
         />
@@ -190,9 +201,9 @@ export default async function AdminPayrollPage({
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {payrollEntries.map((e) => {
-                  const d = userById(e.designerId);
-                  const o = orderById(e.orderId);
+                {entriesList.map((e) => {
+                  const d = userMap.get(e.designerId);
+                  const o = orderMap.get(e.orderId);
                   return (
                     <tr key={e.id} className="hover:bg-muted/40 transition-colors">
                       <td className="px-4 py-3">{formatDate(e.accruedAt)}</td>
@@ -234,12 +245,12 @@ export default async function AdminPayrollPage({
           <div className="p-5 border-b">
             <h2 className="font-semibold">Riwayat Batch Payout</h2>
           </div>
-          {payoutBatches.length === 0 ? (
+          {batchesList.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">Belum ada batch.</div>
           ) : (
             <ul className="divide-y">
-              {payoutBatches.map((b) => {
-                const processor = userById(b.processedById);
+              {batchesList.map((b) => {
+                const processor = userMap.get(b.processedById);
                 return (
                   <li key={b.id} className="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
                     <div>

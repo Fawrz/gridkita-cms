@@ -9,7 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { signInAs, signOut } from "@/app/actions/auth";
+import { signInWithCredentials, signOut } from "@/app/actions/auth";
 import { users } from "@/lib/mock/users";
 import { cn } from "@/lib/utils";
 
@@ -19,15 +19,25 @@ const roleIcon = {
   CLIENT: UserIcon,
 } as const;
 
+const demoPasswords: Record<string, string> = {
+  "admin@gridkita.id": "gridkita2026",
+  "wahyu@gridkita.id": "designer123",
+  "raffi@gridkita.id": "designer123",
+  "nabil@gridkita.id": "designer123",
+  "rifat@example.com": "client123",
+  "amelia@example.com": "client123",
+  "budi@example.com": "client123",
+};
+
 export function RoleSwitcher({ currentUserId }: { currentUserId: string | null }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const me = users.find((u) => u.id === currentUserId) ?? null;
 
-  const handlePick = (id: string) => {
+  const handlePick = (email: string) => {
     setOpen(false);
     startTransition(() => {
-      void signInAs(id);
+      void signInWithCredentials(email, demoPasswords[email] || "demo123");
     });
   };
 
@@ -84,7 +94,7 @@ export function RoleSwitcher({ currentUserId }: { currentUserId: string | null }
                   {list.map((u) => (
                     <button
                       key={u.id}
-                      onClick={() => handlePick(u.id)}
+                      onClick={() => handlePick(u.email)}
                       disabled={pending}
                       className={cn(
                         "w-full text-left px-3 py-2 rounded-md text-sm flex items-center justify-between gap-2 hover:bg-muted transition-colors",

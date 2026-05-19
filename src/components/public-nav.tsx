@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { BrandMark } from "@/components/brand";
-import { getCurrentUser, dashboardPathFor } from "@/lib/auth-mock";
+import { getCurrentUser, dashboardPathFor } from "@/lib/session";
 import { MobileNavLoader } from "@/components/mobile-nav-loader";
 
 const NAV = [

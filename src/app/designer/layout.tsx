@@ -1,7 +1,7 @@
-import { requireRole } from "@/lib/auth-mock";
+import { requireRole } from "@/lib/session";
 import { DashboardShell, type NavGroup } from "@/components/dashboard-shell";
-import { ordersByDesigner } from "@/lib/mock/orders";
-import { unreadCount } from "@/lib/mock/notifications";
+import { ordersByDesigner } from "@/lib/queries/orders";
+import { unreadCount } from "@/lib/queries/notifications";
 
 export default async function DesignerLayout({
   children,
@@ -9,9 +9,10 @@ export default async function DesignerLayout({
   children: React.ReactNode;
 }) {
   const me = await requireRole("DESIGNER");
-  const myTasks = ordersByDesigner(me.id).filter(
+  const myTasks = (await ordersByDesigner(me.id)).filter(
     (o) => !["DELIVERED", "CANCELLED"].includes(o.status)
   );
+  const unread = await unreadCount(me.id);
 
   const groups: NavGroup[] = [
     {
@@ -37,7 +38,7 @@ export default async function DesignerLayout({
           href: "/designer/notifications",
           label: "Notifikasi",
           icon: "Bell",
-          badge: unreadCount(me.id) || undefined,
+          badge: unread || undefined,
         },
         { href: "/designer/profile", label: "Profil", icon: "User" },
       ],
@@ -48,7 +49,7 @@ export default async function DesignerLayout({
     <DashboardShell
       groups={groups}
       me={me}
-      unread={unreadCount(me.id)}
+      unread={unread}
       notifLink="/designer/notifications"
       roleLabel="Designer"
     >

@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { ImageFallback } from "@/components/image-fallback";
-import { portfolios } from "@/lib/mock/portfolio";
+import { portfolios } from "@/lib/queries/portfolio";
 import { PageHeader } from "@/components/page-header";
-
-const CATEGORIES = ["Semua", ...Array.from(new Set(portfolios.map((p) => p.category)))];
 
 export default async function PortfolioPage({
   searchParams,
@@ -13,8 +11,10 @@ export default async function PortfolioPage({
 }) {
   const { cat } = await searchParams;
   const active = cat ?? "Semua";
+  const allPortfolios = await portfolios();
+  const CATEGORIES = ["Semua", ...Array.from(new Set(allPortfolios.map((p) => p.category)))];
   const list =
-    active === "Semua" ? portfolios : portfolios.filter((p) => p.category === active);
+    active === "Semua" ? allPortfolios : allPortfolios.filter((p) => p.category === active);
 
   return (
     <div className="container mx-auto px-4 py-12 md:py-16">

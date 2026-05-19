@@ -1,7 +1,7 @@
-import { requireRole } from "@/lib/auth-mock";
+import { requireRole } from "@/lib/session";
 import { DashboardShell, type NavGroup } from "@/components/dashboard-shell";
-import { ordersByClient } from "@/lib/mock/orders";
-import { unreadCount } from "@/lib/mock/notifications";
+import { ordersByClient } from "@/lib/queries/orders";
+import { unreadCount } from "@/lib/queries/notifications";
 
 export default async function DashboardLayout({
   children,
@@ -9,10 +9,11 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const me = await requireRole("CLIENT");
-  const myOrders = ordersByClient(me.id);
+  const myOrders = await ordersByClient(me.id);
   const activeOrders = myOrders.filter(
     (o) => !["DELIVERED", "CANCELLED"].includes(o.status)
   ).length;
+  const unread = await unreadCount(me.id);
 
   const groups: NavGroup[] = [
     {
@@ -44,7 +45,7 @@ export default async function DashboardLayout({
           href: "/dashboard/notifications",
           label: "Notifikasi",
           icon: "Bell",
-          badge: unreadCount(me.id) || undefined,
+          badge: unread || undefined,
         },
         { href: "/dashboard/profile", label: "Profil", icon: "User" },
       ],
@@ -55,7 +56,7 @@ export default async function DashboardLayout({
     <DashboardShell
       groups={groups}
       me={me}
-      unread={unreadCount(me.id)}
+      unread={unread}
       notifLink="/dashboard/notifications"
       roleLabel="Klien"
     >

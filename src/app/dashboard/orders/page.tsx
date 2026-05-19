@@ -6,9 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { OrderStatusBadge } from "@/components/order-status-badge";
 import { EntityCard } from "@/components/entity-card";
-import { requireRole } from "@/lib/auth-mock";
-import { ordersByClient } from "@/lib/mock/orders";
-import { packageById } from "@/lib/mock/catalog";
+import { requireRole } from "@/lib/session";
+import { ordersByClient } from "@/lib/queries/orders";
+import { packages } from "@/lib/queries/catalog";
 import { formatIDR, formatDate } from "@/lib/format";
 import type { OrderStatus } from "@/types";
 import { STATUS_LABEL } from "@/lib/state-machine";
@@ -27,7 +27,9 @@ export default async function ClientOrdersPage({
 }) {
   const me = await requireRole("CLIENT");
   const { filter = "all", q = "" } = await searchParams;
-  let list = ordersByClient(me.id);
+  let list = await ordersByClient(me.id);
+  const allPackages = await packages();
+  const packageMap = new Map(allPackages.map(p => [p.id, p]));
   const f = FILTERS.find((x) => x.key === filter);
   if (f?.match) list = list.filter((o) => f.match!.includes(o.status));
   if (q) {
@@ -91,7 +93,7 @@ export default async function ClientOrdersPage({
         <>
           <div className="grid gap-3 md:hidden">
             {list.map((o) => {
-              const pkg = o.servicePackageId ? packageById(o.servicePackageId) : null;
+              const pkg = o.servicePackageId ? packageMap.get(o.servicePackageId) : null;
               return (
                 <EntityCard
                   key={o.id}
@@ -127,7 +129,7 @@ export default async function ClientOrdersPage({
                   </thead>
                   <tbody className="divide-y">
                     {list.map((o) => {
-                      const pkg = o.servicePackageId ? packageById(o.servicePackageId) : null;
+                      const pkg = o.servicePackageId ? packageMap.get(o.servicePackageId) : null;
                       return (
                         <tr key={o.id} className="hover:bg-muted/30">
                           <td className="px-4 py-3 font-mono text-xs">{o.code}</td>

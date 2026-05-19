@@ -52,3 +52,12 @@ export async function orderFunnel() {
     })
   ).then((r) => r.filter((x) => x.jumlah > 0));
 }
+
+export async function expenseBreakdown() {
+  const cats = await db.expenseCategory.findMany();
+  const flows = await db.cashFlow.findMany({ where: { type: "EXPENSE" } });
+  return cats.map((cat) => ({
+    name: cat.name,
+    value: flows.filter((c) => c.categoryId === cat.id).reduce((s, c) => s + Number(c.amount), 0),
+  })).filter((x) => x.value > 0);
+}

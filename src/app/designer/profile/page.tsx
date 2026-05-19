@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/page-header";
 import { ProfileForm } from "@/components/profile-form";
-import { requireRole } from "@/lib/auth-mock";
+import { requireRole } from "@/lib/session";
 
 export default async function DesignerProfilePage() {
   const me = await requireRole("DESIGNER");

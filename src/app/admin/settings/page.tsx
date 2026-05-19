@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/page-header";
-import { requireRole } from "@/lib/auth-mock";
+import { requireRole } from "@/lib/session";
 
 export default async function AdminSettingsPage() {
   await requireRole("ADMIN");

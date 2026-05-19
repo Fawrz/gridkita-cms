@@ -1,4 +1,4 @@
-import { requireRole } from "@/lib/auth-mock";
+import { requireRole } from "@/lib/session";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
@@ -8,26 +8,36 @@ import {
   expenseBreakdown,
   designerRanking,
   orderFunnel,
-} from "@/lib/mock/analytics";
-import { cashFlows, payrollEntries } from "@/lib/mock/finance";
-import { orders } from "@/lib/mock/orders";
+} from "@/lib/queries/analytics";
+import { cashFlows, payrollEntries } from "@/lib/queries/finance";
+import { allOrders } from "@/lib/queries/orders";
 import { formatIDR } from "@/lib/format";
 import { TrendingUp, TrendingDown, Percent, Target } from "lucide-react";
 
 export default async function AdminReportsPage() {
   await requireRole("ADMIN");
 
-  const revenue = cashFlows
+  const [cashFlowsList, payrollEntriesList, ordersList, financeData, expenseData, rankingData, funnelData] = await Promise.all([
+    cashFlows(),
+    payrollEntries(),
+    allOrders(),
+    monthlyFinance(),
+    expenseBreakdown(),
+    designerRanking(),
+    orderFunnel(),
+  ]);
+
+  const revenue = cashFlowsList
     .filter((c) => c.source === "ORDER_PAYMENT")
     .reduce((s, c) => s + c.amount, 0);
-  const expense = cashFlows
+  const expense = cashFlowsList
     .filter((c) => c.type === "EXPENSE")
     .reduce((s, c) => s + c.amount, 0);
   const profit = revenue - expense;
   const margin = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
 
-  const totalOrders = orders.length;
-  const deliveredOrders = orders.filter((o) => o.status === "DELIVERED").length;
+  const totalOrders = ordersList.length;
+  const deliveredOrders = ordersList.filter((o) => o.status === "DELIVERED").length;
   const conversionRate =
     totalOrders > 0 ? Math.round((deliveredOrders / totalOrders) * 100) : 0;
 
@@ -38,13 +48,13 @@ export default async function AdminReportsPage() {
       month: "long",
       year: "numeric",
     });
-    const inc = cashFlows
+    const inc = cashFlowsList
       .filter((c) => c.occurredAt.startsWith(m) && c.type === "INCOME" && c.source === "ORDER_PAYMENT")
       .reduce((s, c) => s + c.amount, 0);
-    const exp = cashFlows
+    const exp = cashFlowsList
       .filter((c) => c.occurredAt.startsWith(m) && c.type === "EXPENSE")
       .reduce((s, c) => s + c.amount, 0);
-    const payrollPaid = payrollEntries
+    const payrollPaid = payrollEntriesList
       .filter((e) => e.accruedAt.startsWith(m))
       .reduce((s, e) => s + e.commissionAmount, 0);
     return {
@@ -138,10 +148,10 @@ export default async function AdminReportsPage() {
 
       {/* Charts grid */}
       <div className="grid xl:grid-cols-2 gap-4">
-        <FinanceLineChart data={monthlyFinance} />
-        <ExpensePieChart data={expenseBreakdown} />
-        <DesignerBarChart data={designerRanking} />
-        <FunnelBarChart data={orderFunnel} />
+        <FinanceLineChart data={financeData} />
+        <ExpensePieChart data={expenseData} />
+        <DesignerBarChart data={rankingData} />
+        <FunnelBarChart data={funnelData} />
       </div>
     </>
   );

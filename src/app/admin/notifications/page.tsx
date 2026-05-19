@@ -1,4 +1,4 @@
-import { requireRole } from "@/lib/auth-mock";
+import { requireRole } from "@/lib/session";
 import { NotificationsList } from "@/app/dashboard/notifications/page";
 
 export default async function AdminNotificationsPage() {

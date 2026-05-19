@@ -3,8 +3,8 @@ import { Bell, BellOff } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
-import { requireRole } from "@/lib/auth-mock";
-import { notificationsByUser } from "@/lib/mock/notifications";
+import { requireRole } from "@/lib/session";
+import { notificationsByUser } from "@/lib/queries/notifications";
 import { relativeTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -13,8 +13,8 @@ export default async function ClientNotificationsPage() {
   return <NotificationsList userId={me.id} />;
 }
 
-export function NotificationsList({ userId }: { userId: string }) {
-  const list = notificationsByUser(userId);
+export async function NotificationsList({ userId }: { userId: string }) {
+  const list = await notificationsByUser(userId);
 
   return (
     <>

@@ -10,8 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
-import { requireRole } from "@/lib/auth-mock";
-import { cashFlows, expenseCategories } from "@/lib/mock/finance";
+import { requireRole } from "@/lib/session";
+import { cashFlows, expenseCategories } from "@/lib/queries/finance";
 import { formatIDR, formatDate } from "@/lib/format";
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -34,17 +34,21 @@ export default async function AdminCashflowPage({
     redirect("/admin/cashflow");
   }
 
+  const [cashFlowsList, expenseCategoriesList] = await Promise.all([
+    cashFlows(),
+    expenseCategories(),
+  ]);
   const filtered =
     type === "income"
-      ? cashFlows.filter((c) => c.type === "INCOME")
+      ? cashFlowsList.filter((c) => c.type === "INCOME")
       : type === "expense"
-      ? cashFlows.filter((c) => c.type === "EXPENSE")
-      : cashFlows;
+      ? cashFlowsList.filter((c) => c.type === "EXPENSE")
+      : cashFlowsList;
 
-  const totalIncome = cashFlows
+  const totalIncome = cashFlowsList
     .filter((c) => c.type === "INCOME")
     .reduce((s, c) => s + c.amount, 0);
-  const totalExpense = cashFlows
+  const totalExpense = cashFlowsList
     .filter((c) => c.type === "EXPENSE")
     .reduce((s, c) => s + c.amount, 0);
   const netBalance = totalIncome - totalExpense;
@@ -85,7 +89,7 @@ export default async function AdminCashflowPage({
                       <SelectValue placeholder="Pilih kategori" />
                     </SelectTrigger>
                     <SelectContent>
-                      {expenseCategories.map((c) => (
+                      {expenseCategoriesList.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
                           {c.name}
                         </SelectItem>

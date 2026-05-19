@@ -1,13 +1,18 @@
-import { requireRole } from "@/lib/auth-mock";
+import { requireRole } from "@/lib/session";
 import { DashboardShell, type NavGroup } from "@/components/dashboard-shell";
-import { orders, payments } from "@/lib/mock/orders";
-import { unreadCount } from "@/lib/mock/notifications";
+import { allOrders, payments } from "@/lib/queries/orders";
+import { unreadCount } from "@/lib/queries/notifications";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const me = await requireRole("ADMIN");
-  const needsAction = orders.filter((o) => ["WAITING_VERIFICATION", "PAID", "QUOTE_REQUESTED", "DONE"].includes(o.status)).length;
-  const waitingPayments = payments.filter((p) => p.status === "WAITING").length;
-  const quotes = orders.filter((o) => o.status === "QUOTE_REQUESTED").length;
+  const [ordersList, paymentsList, unread] = await Promise.all([
+    allOrders(),
+    payments(),
+    unreadCount(me.id),
+  ]);
+  const needsAction = ordersList.filter((o) => ["WAITING_VERIFICATION", "PAID", "QUOTE_REQUESTED", "DONE"].includes(o.status)).length;
+  const waitingPayments = paymentsList.filter((p) => p.status === "WAITING").length;
+  const quotes = ordersList.filter((o) => o.status === "QUOTE_REQUESTED").length;
 
   const groups: NavGroup[] = [
     { label: "Manajemen", items: [
@@ -28,13 +33,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       { href: "/admin/reports", label: "Reports", icon: "BarChart3" },
     ]},
     { label: "Sistem", items: [
-      { href: "/admin/notifications", label: "Notifikasi", icon: "Bell", badge: unreadCount(me.id) || undefined },
+      { href: "/admin/notifications", label: "Notifikasi", icon: "Bell", badge: unread || undefined },
       { href: "/admin/settings", label: "Settings", icon: "Settings" },
     ]},
   ];
 
   return (
-    <DashboardShell groups={groups} me={me} unread={unreadCount(me.id)} notifLink="/admin/notifications" roleLabel="Admin" showThemeToggle>
+    <DashboardShell groups={groups} me={me} unread={unread} notifLink="/admin/notifications" roleLabel="Admin" showThemeToggle>
       {children}
     </DashboardShell>
   );
