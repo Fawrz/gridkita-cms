@@ -27,7 +27,7 @@ export default async function AdminHomePage() {
   const packageMap = new Map(packagesList.map((p: { id: string; name: string }) => [p.id, p]));
   const needsAction = ordersList
     .filter((o: { status: string; updatedAt: string }) => ["WAITING_VERIFICATION", "PAID", "QUOTE_REQUESTED", "DONE"].includes(o.status))
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .sort((a: { updatedAt: string }, b: { updatedAt: string }) => b.updatedAt.localeCompare(a.updatedAt))
     .slice(0, 6);
 
   return (

@@ -37,7 +37,7 @@ export default async function AdminReportsPage() {
   const margin = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
 
   const totalOrders = ordersList.length;
-  const deliveredOrders = ordersList.filter((o) => o.status === "DELIVERED").length;
+  const deliveredOrders = ordersList.filter((o: { status: string }) => o.status === "DELIVERED").length;
   const conversionRate =
     totalOrders > 0 ? Math.round((deliveredOrders / totalOrders) * 100) : 0;
 
@@ -49,13 +49,13 @@ export default async function AdminReportsPage() {
       year: "numeric",
     });
     const inc = cashFlowsList
-      .filter((c) => c.occurredAt.startsWith(m) && c.type === "INCOME" && c.source === "ORDER_PAYMENT")
+      .filter((c: { occurredAt: string; type: string; source: string; amount: number }) => c.occurredAt.startsWith(m) && c.type === "INCOME" && c.source === "ORDER_PAYMENT")
       .reduce((s: number, c) => s + c.amount, 0);
     const exp = cashFlowsList
-      .filter((c) => c.occurredAt.startsWith(m) && c.type === "EXPENSE")
+      .filter((c: { occurredAt: string; type: string; amount: number }) => c.occurredAt.startsWith(m) && c.type === "EXPENSE")
       .reduce((s: number, c) => s + c.amount, 0);
     const payrollPaid = payrollEntriesList
-      .filter((e) => e.accruedAt.startsWith(m))
+      .filter((e: { accruedAt: string; commissionAmount: number }) => e.accruedAt.startsWith(m))
       .reduce((s: number, e) => s + e.commissionAmount, 0);
     return {
       month: shortMonth,
