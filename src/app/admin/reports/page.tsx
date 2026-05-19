@@ -28,10 +28,10 @@ export default async function AdminReportsPage() {
   ]);
 
   const revenue = cashFlowsList
-    .filter((c) => c.source === "ORDER_PAYMENT")
+    .filter((c: { source: string; amount: number }) => c.source === "ORDER_PAYMENT")
     .reduce((s: number, c) => s + c.amount, 0);
   const expense = cashFlowsList
-    .filter((c) => c.type === "EXPENSE")
+    .filter((c: { type: string; amount: number }) => c.type === "EXPENSE")
     .reduce((s: number, c) => s + c.amount, 0);
   const profit = revenue - expense;
   const margin = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
