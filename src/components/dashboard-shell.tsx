@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { SubmitButton } from "@/components/submit-button";
 import {
   Bell,
   Menu,
@@ -147,14 +148,18 @@ export function DashboardShell({
   me,
   unread,
   notifLink,
+  profileLink,
+  settingsLink,
   roleLabel,
-  showThemeToggle = false,
+  showThemeToggle = true,
   children,
 }: {
   groups: NavGroup[];
   me: User;
   unread: number;
   notifLink: string;
+  profileLink: string;
+  settingsLink: string;
   roleLabel: string;
   showThemeToggle?: boolean;
   children: React.ReactNode;
@@ -173,7 +178,7 @@ export function DashboardShell({
         </div>
         <SidebarNav groups={groups} />
         <div className="p-4 border-t border-border/40">
-          <UserCard me={me} />
+          <UserCard me={me} profileLink={profileLink} settingsLink={settingsLink} />
         </div>
       </aside>
 
@@ -199,7 +204,7 @@ export function DashboardShell({
               </div>
               <SidebarNav groups={groups} onNavigate={() => setMobileOpen(false)} />
               <div className="p-4 border-t border-border/40">
-                <UserCard me={me} />
+                <UserCard me={me} profileLink={profileLink} settingsLink={settingsLink} />
               </div>
             </SheetContent>
           </Sheet>
@@ -218,58 +223,20 @@ export function DashboardShell({
 
           <div className="flex-1 md:hidden" />
 
-          {showThemeToggle && <ThemeToggle />}
+          <div className="ml-auto flex items-center gap-1.5">
+            {showThemeToggle && <ThemeToggle />}
 
-          <Button asChild variant="ghost" size="icon" className="relative" aria-label="Notifikasi">
-            <Link href={notifLink}>
-              <Bell className="size-5" />
-              {unread > 0 && (
-                <span className="absolute top-0.5 right-0.5 grid min-h-5 min-w-5 place-items-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-white ring-2 ring-background">
-                  {unread > 9 ? "9+" : unread}
-                </span>
-              )}
-            </Link>
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-11 gap-2 rounded-2xl px-2.5">
-                <Avatar className="size-7">
-                  <AvatarImage src={me.avatarUrl} alt={me.name} />
-                  <AvatarFallback>
-                    {me.name
-                      .split(" ")
-                      .map((p) => p[0])
-                      .slice(0, 2)
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="hidden md:inline text-sm font-medium">
-                  {me.name.split(" ")[0]}
-                </span>
-                <ChevronDown className="size-4 text-muted-foreground" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>
-                <div className="font-medium truncate">{me.name}</div>
-                <div className="text-xs text-muted-foreground truncate">{me.email}</div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href={`${notifLink.replace("/notifications", "/profile")}`}>
-                  Profil saya
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={notifLink}>Notifikasi</Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="p-0">
-                <SignOutForm />
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            <Button asChild variant="ghost" size="icon" className="relative" aria-label="Notifikasi">
+              <Link href={notifLink}>
+                <Bell className="size-5" />
+                {unread > 0 && (
+                  <span className="absolute top-0.5 right-0.5 grid min-h-5 min-w-5 place-items-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-white ring-2 ring-background">
+                    {unread > 9 ? "9+" : unread}
+                  </span>
+                )}
+              </Link>
+            </Button>
+          </div>
         </header>
 
         <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-[1400px] w-full mx-auto">
@@ -283,34 +250,64 @@ export function DashboardShell({
 function SignOutForm() {
   return (
     <form action={signOut} className="w-full">
-      <button
-        type="submit"
-        className="w-full flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer hover:text-foreground transition-colors"
-      >
+      <SubmitButton loadingText="Keluar..." variant="ghost" className="w-full justify-start px-2 py-1.5 text-sm h-auto">
         <LogOut className="size-4 shrink-0" />
         Keluar
-      </button>
+      </SubmitButton>
     </form>
   );
 }
 
-function UserCard({ me }: { me: User }) {
+function UserCard({
+  me,
+  profileLink,
+  settingsLink,
+}: {
+  me: User;
+  profileLink: string;
+  settingsLink: string;
+}) {
   return (
-    <div className="flex items-center gap-2.5 rounded-2xl border border-sidebar-border/60 bg-sidebar-accent/70 p-2.5 shadow-sm">
-      <Avatar className="size-8">
-        <AvatarImage src={me.avatarUrl} alt={me.name} />
-        <AvatarFallback>
-          {me.name
-            .split(" ")
-            .map((p) => p[0])
-            .slice(0, 2)
-            .join("")}
-        </AvatarFallback>
-      </Avatar>
-      <div className="min-w-0 flex-1">
-        <div className="text-xs font-medium truncate">{me.name}</div>
-        <div className="text-[11px] text-muted-foreground truncate">{me.email}</div>
-      </div>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex w-full items-center gap-2.5 rounded-2xl border border-sidebar-border/60 bg-sidebar-accent/70 p-2.5 text-left shadow-sm transition-colors hover:bg-sidebar-accent focus:outline-none focus:ring-2 focus:ring-sidebar-ring"
+        >
+          <Avatar className="size-8">
+            <AvatarImage src={me.avatarUrl} alt={me.name} />
+            <AvatarFallback>
+              {me.name
+                .split(" ")
+                .map((p) => p[0])
+                .slice(0, 2)
+                .join("")}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <div className="text-xs font-medium truncate">{me.name}</div>
+            <div className="text-[11px] text-muted-foreground truncate">{me.email}</div>
+          </div>
+          <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent side="top" align="start" className="w-64">
+        <DropdownMenuLabel>
+          <div className="font-medium truncate">{me.name}</div>
+          <div className="text-xs text-muted-foreground truncate">{me.email}</div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href={profileLink}>Profil Saya</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href={settingsLink}>Pengaturan Akun</Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="p-0">
+          <SignOutForm />
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

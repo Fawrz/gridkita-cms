@@ -1,7 +1,6 @@
-import { redirect } from "next/navigation";
 import { Banknote, CheckCircle2, Clock, Users2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
@@ -114,10 +113,10 @@ export default async function AdminPayrollPage({
                   <input key={e.id} type="hidden" name="designerId" value={e.designerId} />
                 ))}
                 <input type="hidden" name="periodMonth" value={period} />
-                <Button type="submit">
+                <SubmitButton loadingText="Memproses payout...">
                   <Banknote className="size-4 mr-1.5" />
                   Proses Payout Batch ({formatIDR(totalAccrued)})
-                </Button>
+                </SubmitButton>
               </form>
             )}
           </div>

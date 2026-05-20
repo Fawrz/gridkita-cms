@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { registerClient } from "@/app/actions/auth";
@@ -43,9 +43,9 @@ export default function RegisterPage() {
             <Input id="password" name="password" type="password" placeholder="Min. 8 karakter" required />
           </div>
 
-          <Button type="submit" className="w-full" size="lg">
+          <SubmitButton loadingText="Mendaftar..." className="w-full" size="lg">
             Buat akun & masuk
-          </Button>
+          </SubmitButton>
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">

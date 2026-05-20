@@ -1,11 +1,17 @@
 "use server";
 
+import { writeFile, mkdir } from "fs/promises";
+import { join } from "path";
+import { randomUUID } from "crypto";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/session";
 import { canTransition } from "@/lib/state-machine";
 import { calculateSplit } from "@/lib/payroll";
 import { revalidatePath } from "next/cache";
+import { validateFile, ALLOWED_ATTACHMENT_EXTENSIONS, MAX_ATTACHMENT_SIZE } from "@/lib/upload";
+
+const BRIEFS_DIR = join(process.cwd(), "storage", "briefs");
 
 async function generateCode(): Promise<string> {
   const year = new Date().getFullYear();
@@ -13,7 +19,38 @@ async function generateCode(): Promise<string> {
   return `GK-${year}-${String(count + 1).padStart(4, "0")}`;
 }
 
-export async function createPackageOrder(packageId: string, briefData: Record<string, string>) {
+async function uploadAttachments(orderId: string, userId: string, formData: FormData) {
+  const files = formData.getAll("files") as File[];
+  const validFiles = files.filter((f) => f && f.size > 0);
+  if (!validFiles.length) return;
+
+  for (const file of validFiles) {
+    const validation = validateFile(file, ALLOWED_ATTACHMENT_EXTENSIONS, MAX_ATTACHMENT_SIZE);
+    if (!validation.valid) {
+      redirect(`/dashboard/orders/${orderId}?attachmentError=${encodeURIComponent(validation.error!)}`);
+    }
+  }
+
+  await mkdir(BRIEFS_DIR, { recursive: true });
+
+  for (const file of validFiles) {
+    const ext = file.name.split(".").pop() ?? "bin";
+    const filename = `${randomUUID()}.${ext}`;
+    await writeFile(join(BRIEFS_DIR, filename), Buffer.from(await file.arrayBuffer()));
+
+    await db.orderAttachment.create({
+      data: {
+        orderId,
+        path: `briefs/${filename}`,
+        name: file.name,
+        uploadedById: userId,
+        kind: "REFERENCE",
+      },
+    });
+  }
+}
+
+export async function createPackageOrder(packageId: string, briefData: Record<string, string>, formData?: FormData) {
   const me = await requireRole("CLIENT");
   const pkg = await db.servicePackage.findUnique({ where: { id: packageId } });
   if (!pkg || !pkg.isActive) throw new Error("Paket tidak ditemukan.");
@@ -38,6 +75,10 @@ export async function createPackageOrder(packageId: string, briefData: Record<st
     data: { orderId: order.id, toStatus: "PENDING_PAYMENT", changedById: me.id },
   });
 
+  if (formData) {
+    await uploadAttachments(order.id, me.id, formData);
+  }
+
   const admin = await db.user.findFirst({ where: { role: "ADMIN" } });
   if (admin) {
     await db.notification.create({
@@ -54,7 +95,7 @@ export async function createPackageOrder(packageId: string, briefData: Record<st
   redirect(`/dashboard/orders/${order.id}`);
 }
 
-export async function createCustomOrder(description: string, briefData: Record<string, string>) {
+export async function createCustomOrder(description: string, briefData: Record<string, string>, formData?: FormData) {
   const me = await requireRole("CLIENT");
   const order = await db.order.create({
     data: {
@@ -70,6 +111,11 @@ export async function createCustomOrder(description: string, briefData: Record<s
   await db.orderStatusHistory.create({
     data: { orderId: order.id, toStatus: "QUOTE_REQUESTED", changedById: me.id },
   });
+
+  if (formData) {
+    await uploadAttachments(order.id, me.id, formData);
+  }
+
   revalidatePath("/dashboard/orders");
   redirect(`/dashboard/orders/${order.id}`);
 }
@@ -86,6 +132,7 @@ export async function cancelOrder(orderId: string) {
     db.orderStatusHistory.create({ data: { orderId, fromStatus: order.status, toStatus: "CANCELLED", changedById: me.id } }),
   ]);
   revalidatePath(`/dashboard/orders/${orderId}`);
+  redirect(`/dashboard/orders/${orderId}?toast=order-cancelled`);
 }
 
 export async function requestRevision(orderId: string, note: string) {
@@ -94,7 +141,10 @@ export async function requestRevision(orderId: string, note: string) {
   if (!order || order.clientId !== me.id) throw new Error("Tidak ditemukan.");
 
   await db.$transaction([
-    db.order.update({ where: { id: orderId }, data: { status: "REVISION", revisionCount: { increment: 1 } } }),
+    db.order.update({
+      where: { id: orderId },
+      data: { status: "REVISION", revisionCount: { increment: 1 }, adminApprovedDeliverable: false },
+    }),
     db.orderStatusHistory.create({ data: { orderId, fromStatus: order.status, toStatus: "REVISION", changedById: me.id, note } }),
   ]);
 
@@ -109,6 +159,7 @@ export async function requestRevision(orderId: string, note: string) {
     });
   }
   revalidatePath(`/dashboard/orders/${orderId}`);
+  redirect(`/dashboard/orders/${orderId}?toast=revision-requested`);
 }
 
 export async function confirmDelivered(orderId: string) {
@@ -116,13 +167,20 @@ export async function confirmDelivered(orderId: string) {
   const order = await db.order.findUnique({ where: { id: orderId } });
   if (!order || order.clientId !== me.id) throw new Error("Tidak ditemukan.");
   if (order.status !== "DONE") throw new Error("Order belum DONE.");
+  if (!order.adminApprovedDeliverable) throw new Error("Hasil desain belum diteruskan oleh admin.");
 
   const split = calculateSplit(Number(order.finalPrice));
 
   await db.$transaction(async (tx) => {
     await tx.order.update({ where: { id: orderId }, data: { status: "DELIVERED" } });
     await tx.orderStatusHistory.create({
-      data: { orderId, fromStatus: "DONE", toStatus: "DELIVERED", changedById: me.id },
+      data: {
+        orderId,
+        fromStatus: "DONE",
+        toStatus: "DELIVERED",
+        changedById: me.id,
+        note: "Klien menyetujui hasil desain final.",
+      },
     });
     await tx.payrollEntry.upsert({
       where: { orderId },
@@ -147,4 +205,5 @@ export async function confirmDelivered(orderId: string) {
   });
 
   revalidatePath(`/dashboard/orders/${orderId}`);
+  redirect(`/dashboard/orders/${orderId}?toast=order-delivered`);
 }

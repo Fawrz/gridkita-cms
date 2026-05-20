@@ -9,9 +9,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { signInWithCredentials, signOut } from "@/app/actions/auth";
-import { users } from "@/lib/mock/users";
+import { signOut, switchDemoAccount } from "@/app/actions/auth";
 import { cn } from "@/lib/utils";
+import type { Role } from "@/types";
 
 const roleIcon = {
   ADMIN: ShieldCheck,
@@ -19,25 +19,24 @@ const roleIcon = {
   CLIENT: UserIcon,
 } as const;
 
-const demoPasswords: Record<string, string> = {
-  "admin@gridkita.id": "gridkita2026",
-  "wahyu@gridkita.id": "designer123",
-  "raffi@gridkita.id": "designer123",
-  "nabil@gridkita.id": "designer123",
-  "rifat@example.com": "client123",
-  "amelia@example.com": "client123",
-  "budi@example.com": "client123",
-};
+const demoAccounts: { email: string; name: string; role: Role }[] = [
+  { email: "admin@gridkita.id", name: "Damar Prakoso", role: "ADMIN" },
+  { email: "arka@gridkita.id", name: "Arka Mahendra", role: "DESIGNER" },
+  { email: "nara@gridkita.id", name: "Nara Satria", role: "DESIGNER" },
+  { email: "tara@example.com", name: "Tara Kusuma", role: "CLIENT" },
+  { email: "nesya@example.com", name: "Nesya Larasati", role: "CLIENT" },
+  { email: "gilang@example.com", name: "Gilang Aditya", role: "CLIENT" },
+];
 
-export function RoleSwitcher({ currentUserId }: { currentUserId: string | null }) {
+export function RoleSwitcher({ currentUserEmail }: { currentUserEmail: string | null }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
-  const me = users.find((u) => u.id === currentUserId) ?? null;
+  const me = demoAccounts.find((u) => u.email === currentUserEmail) ?? null;
 
   const handlePick = (email: string) => {
     setOpen(false);
     startTransition(() => {
-      void signInWithCredentials(email, demoPasswords[email] || "demo123");
+      void switchDemoAccount(email);
     });
   };
 
@@ -83,7 +82,7 @@ export function RoleSwitcher({ currentUserId }: { currentUserId: string | null }
           </div>
           <div className="max-h-80 overflow-y-auto py-1">
             {(["ADMIN", "DESIGNER", "CLIENT"] as const).map((role) => {
-              const list = users.filter((u) => u.role === role);
+              const list = demoAccounts.filter((u) => u.role === role);
               const Icon = roleIcon[role];
               return (
                 <div key={role} className="px-1">
@@ -93,12 +92,12 @@ export function RoleSwitcher({ currentUserId }: { currentUserId: string | null }
                   </div>
                   {list.map((u) => (
                     <button
-                      key={u.id}
+                      key={u.email}
                       onClick={() => handlePick(u.email)}
                       disabled={pending}
                       className={cn(
                         "w-full text-left px-3 py-2 rounded-md text-sm flex items-center justify-between gap-2 hover:bg-muted transition-colors",
-                        me?.id === u.id && "bg-primary/10 text-primary"
+                        me?.email === u.email && "bg-primary/10 text-primary"
                       )}
                     >
                       <div className="flex items-center gap-2 min-w-0">
@@ -116,11 +115,6 @@ export function RoleSwitcher({ currentUserId }: { currentUserId: string | null }
                           </div>
                         </div>
                       </div>
-                      {!u.isActive && (
-                        <Badge variant="outline" className="text-[10px]">
-                          off
-                        </Badge>
-                      )}
                     </button>
                   ))}
                 </div>

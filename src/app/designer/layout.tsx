@@ -31,18 +31,6 @@ export default async function DesignerLayout({
         { href: "/designer/earnings", label: "Komisi", icon: "Wallet" },
       ],
     },
-    {
-      label: "Akun",
-      items: [
-        {
-          href: "/designer/notifications",
-          label: "Notifikasi",
-          icon: "Bell",
-          badge: unread || undefined,
-        },
-        { href: "/designer/profile", label: "Profil", icon: "User" },
-      ],
-    },
   ];
 
   return (
@@ -51,6 +39,8 @@ export default async function DesignerLayout({
       me={me}
       unread={unread}
       notifLink="/designer/notifications"
+      profileLink="/designer/profile"
+      settingsLink="/designer/profile"
       roleLabel="Designer"
     >
       {children}

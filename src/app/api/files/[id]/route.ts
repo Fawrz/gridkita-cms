@@ -6,6 +6,29 @@ import { db } from "@/lib/db";
 
 const STORAGE = join(process.cwd(), "storage");
 
+function mimeTypeFor(path: string) {
+  const ext = path.split(".").pop()?.toLowerCase();
+  switch (ext) {
+    case "png":
+      return "image/png";
+    case "webp":
+      return "image/webp";
+    case "gif":
+      return "image/gif";
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "pdf":
+      return "application/pdf";
+    case "zip":
+      return "application/zip";
+    case "fig":
+      return "application/octet-stream";
+    default:
+      return "application/octet-stream";
+  }
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -25,7 +48,7 @@ export async function GET(
     if (session.user.role !== "ADMIN" && order?.clientId !== session.user.id)
       return new NextResponse("Forbidden", { status: 403 });
     filePath = payment.proofPath;
-    mimeType = "image/jpeg";
+    mimeType = mimeTypeFor(payment.proofPath);
 
   } else if (id.startsWith("deliverable-")) {
     const dId = id.replace("deliverable-", "");

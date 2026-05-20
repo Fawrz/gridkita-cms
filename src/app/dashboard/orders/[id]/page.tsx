@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   Download,
-  Upload,
   Check,
   X,
   RotateCcw,
@@ -13,6 +12,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PageHeader } from "@/components/page-header";
 import { OrderStatusBadge } from "@/components/order-status-badge";
 import { OrderTimeline } from "@/components/order-timeline";
+import { PaymentProofForm } from "@/components/payment-proof-form";
 import { requireRole } from "@/lib/session";
 import {
   orderById,
@@ -37,11 +38,14 @@ import { acceptQuote } from "@/app/actions/admin";
 
 export default async function ClientOrderDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ paymentError?: string; paymentSuccess?: string }>;
 }) {
   const me = await requireRole("CLIENT");
   const { id } = await params;
+  const { paymentError, paymentSuccess } = await searchParams;
   const order = await orderById(id);
   if (!order || order.clientId !== me.id) notFound();
   const pkg = order.servicePackageId ? await packageById(order.servicePackageId) : null;
@@ -53,8 +57,10 @@ export default async function ClientOrderDetailPage({
   const userMap = new Map(allUsersList.map(u => [u.id, u]));
 
   const showQris = order.status === "PENDING_PAYMENT";
-  const canConfirmDone = order.status === "DONE";
-  const canRevision = order.status === "DONE";
+  const canReviewDeliverables = order.status === "DONE" && order.adminApprovedDeliverable;
+  const canConfirmDone = canReviewDeliverables;
+  const canRevision = canReviewDeliverables;
+  const deliveredHistory = history.find((h) => h.toStatus === "DELIVERED");
   const canCancel = ["PENDING_PAYMENT", "QUOTE_REQUESTED", "QUOTE_OFFERED"].includes(
     order.status
   );
@@ -116,14 +122,14 @@ export default async function ClientOrderDetailPage({
             Setujui untuk lanjut ke pembayaran, atau tolak.
             <div className="mt-3 flex gap-2">
               <form action={handleAcceptQuote}>
-                <Button size="sm" type="submit">
+                <SubmitButton loadingText="Memproses..." size="sm">
                   <Check className="size-4 mr-1" /> Setujui & Bayar
-                </Button>
+                </SubmitButton>
               </form>
               <form action={handleRejectQuote}>
-                <Button size="sm" type="submit" variant="outline">
+                <SubmitButton loadingText="Memproses..." size="sm" variant="outline">
                   <X className="size-4 mr-1" /> Tolak
-                </Button>
+                </SubmitButton>
               </form>
             </div>
           </AlertDescription>
@@ -135,6 +141,50 @@ export default async function ClientOrderDetailPage({
           <AlertCircle className="size-4 text-destructive" />
           <AlertTitle>Bukti Pembayaran Ditolak</AlertTitle>
           <AlertDescription>{payment.rejectReason}</AlertDescription>
+        </Alert>
+      )}
+
+      {paymentError && (
+        <Alert className="mb-6 border-destructive/40 bg-destructive/5">
+          <AlertCircle className="size-4 text-destructive" />
+          <AlertTitle>Upload bukti pembayaran belum berhasil</AlertTitle>
+          <AlertDescription>
+            {paymentError === "file-too-large"
+              ? "Ukuran file maksimal 5MB. Pilih file yang lebih kecil lalu kirim ulang."
+              : "Pilih file bukti transfer terlebih dahulu sebelum mengirim pembayaran."}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {paymentSuccess === "uploaded" && (
+        <Alert className="mb-6 border-success/40 bg-success/5">
+          <Check className="size-4 text-success" />
+          <AlertTitle>Bukti pembayaran terkirim</AlertTitle>
+          <AlertDescription>
+            Bukti pembayaran berhasil diunggah dan sedang menunggu verifikasi admin.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {order.status === "DONE" && !order.adminApprovedDeliverable && (
+        <Alert className="mb-6 border-info/40 bg-info/5">
+          <AlertCircle className="size-4" />
+          <AlertTitle>Hasil desain sedang direview admin</AlertTitle>
+          <AlertDescription>
+            Desainer sudah menyelesaikan pekerjaan. File hasil desain akan tersedia setelah admin menyetujui dan meneruskannya ke Anda.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {order.status === "DELIVERED" && (
+        <Alert className="mb-6 border-success/40 bg-success/5">
+          <Check className="size-4 text-success" />
+          <AlertTitle>Hasil Desain Disetujui</AlertTitle>
+          <AlertDescription>
+            Anda telah menyetujui hasil desain ini
+            {deliveredHistory ? ` pada ${formatDateTime(deliveredHistory.changedAt)}` : ""}.
+            Order sudah selesai dan tidak ada revisi lanjutan.
+          </AlertDescription>
         </Alert>
       )}
 
@@ -186,6 +236,7 @@ export default async function ClientOrderDetailPage({
                           fill
                           sizes="120px"
                           className="object-cover"
+                          unoptimized
                         />
                       </div>
                     ))}
@@ -213,22 +264,7 @@ export default async function ClientOrderDetailPage({
                     <br />
                     {formatIDR(order.finalPrice)}
                   </div>
-                  <form action={handleUploadProof} className="space-y-3">
-                    <div className="space-y-1.5">
-                      <Label>Unggah bukti transfer</Label>
-                      <label
-                        htmlFor="proof"
-                        className="flex flex-col items-center justify-center gap-1.5 border-2 border-dashed rounded-lg p-5 cursor-pointer hover:border-primary/40 hover:bg-card transition-colors"
-                      >
-                        <Upload className="size-5 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">JPG / PNG, maks 5MB</span>
-                        <input id="proof" name="proof" type="file" accept="image/*" className="hidden" />
-                      </label>
-                    </div>
-                    <Button type="submit" className="w-full">
-                      Kirim Bukti Pembayaran
-                    </Button>
-                  </form>
+                  <PaymentProofForm action={handleUploadProof} />
                 </div>
               </CardContent>
             </Card>
@@ -252,6 +288,7 @@ export default async function ClientOrderDetailPage({
                       fill
                       sizes="400px"
                       className="object-cover"
+                      unoptimized
                     />
                   </div>
                 )}
@@ -260,7 +297,7 @@ export default async function ClientOrderDetailPage({
           )}
 
           {/* Deliverables */}
-          {(order.status === "DONE" || order.status === "DELIVERED") && deliverables.length > 0 && (
+          {((order.status === "DONE" && order.adminApprovedDeliverable) || order.status === "DELIVERED") && deliverables.length > 0 && (
             <Card>
               <CardContent className="p-6">
                 <h2 className="font-semibold mb-4">Hasil Desain</h2>
@@ -295,13 +332,13 @@ export default async function ClientOrderDetailPage({
               <CardContent className="p-6">
                 <h2 className="font-semibold mb-2">Hasil Sudah Sesuai?</h2>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Konfirmasi DELIVERED jika sudah sesuai, atau minta revisi dengan catatan.
+                  Terima hasil jika sudah sesuai, atau minta revisi dengan catatan.
                 </p>
                 <div className="grid sm:grid-cols-2 gap-3">
                   <form action={handleConfirmDelivered}>
-                    <Button type="submit" className="w-full">
+                    <SubmitButton loadingText="Memproses..." className="w-full">
                       <Check className="size-4 mr-1" /> Terima & Selesai
-                    </Button>
+                    </SubmitButton>
                   </form>
                 </div>
                 {canRevision && (
@@ -313,9 +350,9 @@ export default async function ClientOrderDetailPage({
                       rows={3}
                       placeholder="Tolong ubah palette warna ke earth tone..."
                     />
-                    <Button type="submit" variant="outline" className="w-full">
+                    <SubmitButton loadingText="Mengirim..." variant="outline" className="w-full">
                       <RotateCcw className="size-4 mr-1" /> Minta Revisi
-                    </Button>
+                    </SubmitButton>
                   </form>
                 )}
               </CardContent>
@@ -332,9 +369,9 @@ export default async function ClientOrderDetailPage({
                   </p>
                 </div>
                 <form action={handleCancel}>
-                  <Button type="submit" variant="outline">
+                  <SubmitButton loadingText="Membatalkan..." variant="outline">
                     <X className="size-4 mr-1" /> Batalkan
-                  </Button>
+                  </SubmitButton>
                 </form>
               </CardContent>
             </Card>

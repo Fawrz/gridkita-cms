@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -8,9 +8,9 @@ import { signInWithCredentials } from "@/app/actions/auth";
 
 export default function LoginPage() {
   const demoAccounts = [
-    { email: "admin@gridkita.id", password: "gridkita2026", role: "Admin", name: "Firta Aulia" },
-    { email: "wahyu@gridkita.id", password: "designer123", role: "Designer", name: "Wahyu Pratama" },
-    { email: "rifat@example.com", password: "client123", role: "Klien", name: "Rifat Setiawan" },
+    { email: "admin@gridkita.id", password: "gridkita2026", role: "Admin", name: "Damar Prakoso" },
+    { email: "arka@gridkita.id", password: "designer123", role: "Designer", name: "Arka Mahendra" },
+    { email: "tara@example.com", password: "client123", role: "Klien", name: "Tara Kusuma" },
   ];
 
   async function loginAction(formData: FormData) {
@@ -57,9 +57,9 @@ export default function LoginPage() {
             </div>
             <Input id="password" name="password" type="password" placeholder="Password" autoComplete="current-password" required />
           </div>
-          <Button type="submit" className="w-full" size="lg">
+          <SubmitButton loadingText="Memproses..." className="w-full" size="lg">
             Masuk
-          </Button>
+          </SubmitButton>
         </form>
 
         <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-wider text-muted-foreground">
@@ -73,8 +73,8 @@ export default function LoginPage() {
             <form key={d.email} action={quickLogin}>
               <input type="hidden" name="email" value={d.email} />
               <input type="hidden" name="password" value={d.password} />
-              <Button
-                type="submit"
+              <SubmitButton
+                loadingText="Masuk..."
                 variant="outline"
                 className="h-auto w-full justify-between gap-3 py-2"
               >
@@ -83,7 +83,7 @@ export default function LoginPage() {
                   <span className="truncate">{d.name}</span>
                 </span>
                 <span className="min-w-0 truncate text-xs text-muted-foreground">{d.email}</span>
-              </Button>
+              </SubmitButton>
             </form>
           ))}
         </div>

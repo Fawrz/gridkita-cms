@@ -3,17 +3,16 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
-  Upload,
   Play,
   CheckCircle2,
+  Check,
   RotateCcw,
   FileText,
   AlertCircle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PageHeader } from "@/components/page-header";
 import { OrderStatusBadge } from "@/components/order-status-badge";
@@ -29,14 +28,25 @@ import { userById, allUsers } from "@/lib/queries/users";
 import { calculateSplit } from "@/lib/payroll";
 import { formatIDR, formatDate, formatDateTime } from "@/lib/format";
 import { updateOrderStatus, uploadDeliverable } from "@/app/actions/designer";
+import { DeliverableUpload } from "@/components/deliverable-upload";
+import type { OrderStatus } from "@/types";
+
+const DESIGNER_TARGET_STATUSES = ["IN_PROGRESS", "DONE"] as const satisfies readonly OrderStatus[];
+
+function isDesignerTargetStatus(status: string): status is (typeof DESIGNER_TARGET_STATUSES)[number] {
+  return DESIGNER_TARGET_STATUSES.includes(status as (typeof DESIGNER_TARGET_STATUSES)[number]);
+}
 
 export default async function DesignerTaskDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ uploadSuccess?: string; uploadError?: string; statusUpdated?: string }>;
 }) {
   const me = await requireRole("DESIGNER");
   const { id } = await params;
+  const { uploadSuccess, uploadError, statusUpdated } = await searchParams;
   const order = await orderById(id);
   if (!order || order.designerId !== me.id) notFound();
 
@@ -54,7 +64,8 @@ export default async function DesignerTaskDetailPage({
   async function handleUpdateStatus(formData: FormData) {
     "use server";
     const orderId = String(formData.get("orderId"));
-    const toStatus = String(formData.get("toStatus")) as any;
+    const toStatus = String(formData.get("toStatus"));
+    if (!isDesignerTargetStatus(toStatus)) throw new Error("Status tidak valid.");
     const note = String(formData.get("note") || "");
     await updateOrderStatus(orderId, toStatus, note || undefined);
   }
@@ -77,6 +88,32 @@ export default async function DesignerTaskDetailPage({
         }
         actions={<OrderStatusBadge status={order.status} className="text-sm py-1 px-2.5" />}
       />
+
+      {uploadError && (
+        <Alert className="mb-6 border-destructive/40 bg-destructive/5">
+          <AlertCircle className="size-4 text-destructive" />
+          <AlertTitle>Upload gagal</AlertTitle>
+          <AlertDescription>{decodeURIComponent(uploadError)}</AlertDescription>
+        </Alert>
+      )}
+
+      {uploadSuccess && (
+        <Alert className="mb-6 border-success/40 bg-success/5">
+          <Check className="size-4 text-success" />
+          <AlertTitle>Upload berhasil</AlertTitle>
+          <AlertDescription>
+            {uploadSuccess} file berhasil diunggah. Klik &quot;Tandai Selesai&quot; untuk mengirim ke klien.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {statusUpdated && (
+        <Alert className="mb-6 border-success/40 bg-success/5">
+          <Check className="size-4 text-success" />
+          <AlertTitle>Berhasil</AlertTitle>
+          <AlertDescription>Status pekerjaan berhasil diperbarui.</AlertDescription>
+        </Alert>
+      )}
 
       {order.status === "REVISION" && (
         <Alert className="mb-6 border-warning/40 bg-warning/5">
@@ -132,81 +169,85 @@ export default async function DesignerTaskDetailPage({
             </CardContent>
           </Card>
 
-          {/* Action */}
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="font-semibold mb-3">Tindakan</h2>
-              <div className="flex flex-wrap gap-2">
-                {canStart && (
-                  <form action={handleUpdateStatus}>
-                    <input type="hidden" name="orderId" value={order.id} />
-                    <input type="hidden" name="toStatus" value="IN_PROGRESS" />
-                    <Button type="submit">
-                      <Play className="size-4 mr-1.5" /> Mulai Pengerjaan
-                    </Button>
-                  </form>
-                )}
-                {canFinish && (
-                  <form action={handleUpdateStatus}>
-                    <input type="hidden" name="orderId" value={order.id} />
-                    <input type="hidden" name="toStatus" value="DONE" />
-                    <Button type="submit">
-                      <CheckCircle2 className="size-4 mr-1.5" /> Tandai Selesai (DONE)
-                    </Button>
-                  </form>
-                )}
-                {order.status === "IN_PROGRESS" && (
-                  <form action={handleUpdateStatus}>
-                    <input type="hidden" name="orderId" value={order.id} />
-                    <input type="hidden" name="toStatus" value="REVISION" />
-                    <Button type="submit" variant="outline">
-                      <RotateCcw className="size-4 mr-1.5" /> Tandai Revisi
-                    </Button>
-                  </form>
-                )}
-              </div>
-
-              {canFinish && (
-                <form action={uploadDeliverable} className="mt-5 space-y-2">
-                  <input type="hidden" name="orderId" value={order.id} />
-                  <Label>Unggah deliverable final</Label>
-                  <label
-                    htmlFor="delivery"
-                    className="flex flex-col items-center justify-center gap-1.5 border-2 border-dashed rounded-lg p-6 cursor-pointer hover:border-primary/40 hover:bg-muted/50 transition-colors"
-                  >
-                    <Upload className="size-5 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">
-                      ZIP / FIG / PDF / PNG — maks 100MB
-                    </span>
-                    <input id="delivery" name="file" type="file" multiple className="hidden" />
-                  </label>
-                </form>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Existing deliverables */}
-          {deliverables.length > 0 && (
+          {/* Action: Mulai Pengerjaan */}
+          {canStart && (
             <Card>
               <CardContent className="p-6">
-                <h2 className="font-semibold mb-3">Deliverable Terkirim</h2>
-                <ul className="space-y-2">
-                  {deliverables.map((d) => (
-                    <li
-                      key={d.id}
-                      className="flex items-center justify-between p-3 rounded-lg border bg-muted/30"
-                    >
-                      <div>
-                        <div className="font-medium text-sm">{d.fileName}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {(d.sizeBytes / 1024 / 1024).toFixed(1)} MB ·{" "}
-                          {formatDateTime(d.uploadedAt)}
-                        </div>
-                      </div>
-                      <Badge variant="outline">final</Badge>
-                    </li>
-                  ))}
-                </ul>
+                <h2 className="font-semibold mb-3">Tindakan</h2>
+                <form action={handleUpdateStatus}>
+                  <input type="hidden" name="orderId" value={order.id} />
+                  <input type="hidden" name="toStatus" value="IN_PROGRESS" />
+                  <SubmitButton loadingText="Memulai..." size="lg">
+                    <Play className="size-4 mr-1.5" /> Mulai Pengerjaan
+                  </SubmitButton>
+                </form>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Action: Upload & Selesai */}
+          {canFinish && (
+            <Card>
+              <CardContent className="p-6 space-y-5">
+                <h2 className="font-semibold">Upload Deliverable</h2>
+
+                <DeliverableUpload orderId={order.id} action={uploadDeliverable} />
+
+                {/* Existing deliverables */}
+                {deliverables.length > 0 && (
+                  <div className="pt-4 border-t">
+                    <h3 className="font-medium text-sm mb-3">
+                      File Terupload ({deliverables.length})
+                    </h3>
+                    <ul className="space-y-2">
+                      {deliverables.map((d) => (
+                        <li
+                          key={d.id}
+                          className="flex items-center justify-between p-3 rounded-lg border bg-muted/30"
+                        >
+                          <div className="min-w-0">
+                            <div className="font-medium text-sm truncate">{d.fileName}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {(d.sizeBytes / 1024 / 1024).toFixed(1)} MB ·{" "}
+                              {formatDateTime(d.uploadedAt)}
+                            </div>
+                          </div>
+                          <Badge variant="outline">final</Badge>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Tandai Selesai - hanya muncul jika ada deliverable */}
+                {deliverables.length > 0 && (
+                  <div className="pt-4 border-t space-y-3">
+                    <form action={handleUpdateStatus}>
+                      <input type="hidden" name="orderId" value={order.id} />
+                      <input type="hidden" name="toStatus" value="DONE" />
+                      <SubmitButton loadingText="Mengubah status..." variant="outline" className="w-full">
+                        <CheckCircle2 className="size-4 mr-1.5" />
+                        {order.status === "REVISION" ? "Selesaikan Revisi" : "Tandai Pekerjaan Selesai"}
+                      </SubmitButton>
+                    </form>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Pastikan semua file final sudah terupload sebelum menyelesaikan pekerjaan.
+                    </p>
+                  </div>
+                )}
+
+                {/* Tandai Revisi - hanya jika IN_PROGRESS */}
+                {order.status === "IN_PROGRESS" && (
+                  <div className="pt-2">
+                    <form action={handleUpdateStatus}>
+                      <input type="hidden" name="orderId" value={order.id} />
+                      <input type="hidden" name="toStatus" value="REVISION" />
+                      <SubmitButton loadingText="Mengubah status..." variant="outline" className="w-full">
+                        <RotateCcw className="size-4 mr-1.5" /> Tandai Revisi
+                      </SubmitButton>
+                    </form>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

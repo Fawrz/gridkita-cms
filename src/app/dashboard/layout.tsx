@@ -38,18 +38,6 @@ export default async function DashboardLayout({
         },
       ],
     },
-    {
-      label: "Akun",
-      items: [
-        {
-          href: "/dashboard/notifications",
-          label: "Notifikasi",
-          icon: "Bell",
-          badge: unread || undefined,
-        },
-        { href: "/dashboard/profile", label: "Profil", icon: "User" },
-      ],
-    },
   ];
 
   return (
@@ -58,6 +46,8 @@ export default async function DashboardLayout({
       me={me}
       unread={unread}
       notifLink="/dashboard/notifications"
+      profileLink="/dashboard/profile"
+      settingsLink="/dashboard/profile"
       roleLabel="Klien"
     >
       {children}

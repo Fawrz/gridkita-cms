@@ -1,7 +1,6 @@
 import type { OrderStatusHistory, User } from "@/types";
 import { STATUS_LABEL } from "@/lib/state-machine";
 import { formatDateTime } from "@/lib/format";
-import { userById } from "@/lib/mock/users";
 import { Check } from "lucide-react";
 
 export function OrderTimeline({ history, usersMap }: { history: OrderStatusHistory[]; usersMap?: Map<string, User> }) {
@@ -14,7 +13,7 @@ export function OrderTimeline({ history, usersMap }: { history: OrderStatusHisto
   return (
     <ol className="relative border-l ml-3 pl-6 space-y-5">
       {history.map((h, i) => {
-        const actor = usersMap?.get(h.changedById) || userById(h.changedById);
+        const actor = usersMap?.get(h.changedById);
         const isLast = i === history.length - 1;
         return (
           <li key={h.id} className="relative">

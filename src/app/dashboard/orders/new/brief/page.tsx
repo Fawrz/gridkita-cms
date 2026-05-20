@@ -1,12 +1,14 @@
 import Link from "next/link";
-import { ArrowLeft, Upload, Clock, Send } from "lucide-react";
+import { ArrowLeft, Upload, Clock, Send, AlertCircle, Check } from "lucide-react";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ImageFallback } from "@/components/image-fallback";
 import { packageBySlug } from "@/lib/queries/catalog";
 import { formatIDR } from "@/lib/format";
@@ -15,9 +17,9 @@ import { createPackageOrder, createCustomOrder } from "@/app/actions/orders";
 export default async function BriefPage({
   searchParams,
 }: {
-  searchParams: Promise<{ pkg?: string; type?: string }>;
+  searchParams: Promise<{ pkg?: string; type?: string; attachmentError?: string; attachmentSuccess?: string }>;
 }) {
-  const { pkg, type } = await searchParams;
+  const { pkg, type, attachmentError, attachmentSuccess } = await searchParams;
   const isCustom = type === "custom";
   const pkgItem = pkg ? await packageBySlug(pkg) : null;
   if (!isCustom && !pkgItem) redirect("/dashboard/orders/new");
@@ -35,10 +37,10 @@ export default async function BriefPage({
 
     if (isCustom) {
       const description = String(formData.get("customDescription"));
-      await createCustomOrder(description, briefData);
+      await createCustomOrder(description, briefData, formData);
     } else {
       const packageId = pkgItem!.id;
-      await createPackageOrder(packageId, briefData);
+      await createPackageOrder(packageId, briefData, formData);
     }
   }
 
@@ -58,6 +60,24 @@ export default async function BriefPage({
             <p className="text-sm text-muted-foreground mb-6">
               Lengkapi informasi project agar desainer paham kebutuhan Anda.
             </p>
+
+            {attachmentError && (
+              <Alert className="mb-6 border-destructive/40 bg-destructive/5">
+                <AlertCircle className="size-4 text-destructive" />
+                <AlertTitle>Upload lampiran gagal</AlertTitle>
+                <AlertDescription>{decodeURIComponent(attachmentError)}</AlertDescription>
+              </Alert>
+            )}
+
+            {attachmentSuccess && (
+              <Alert className="mb-6 border-success/40 bg-success/5">
+                <Check className="size-4 text-success" />
+                <AlertTitle>Brief & lampiran terkirim</AlertTitle>
+                <AlertDescription>
+                  Permintaan Anda telah dikirim. Admin akan segera memproses.
+                </AlertDescription>
+              </Alert>
+            )}
 
             <form action={submitBrief} className="space-y-5">
               <div className="space-y-1.5">
@@ -161,10 +181,10 @@ export default async function BriefPage({
               </div>
 
               <div className="flex items-center gap-3 pt-2">
-                <Button type="submit" size="lg">
+                <SubmitButton loadingText="Mengirim brief..." size="lg">
                   <Send className="size-4 mr-1.5" />
                   {isCustom ? "Kirim Permintaan" : "Lanjut ke Pembayaran"}
-                </Button>
+                </SubmitButton>
                 <Button asChild variant="ghost">
                   <Link href="/dashboard/orders">Batal</Link>
                 </Button>

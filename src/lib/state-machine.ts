@@ -21,8 +21,9 @@ export const TRANSITIONS: Transition[] = [
   { from: "IN_PROGRESS", to: "REVISION", allowedRoles: ["DESIGNER"] },
   { from: "IN_PROGRESS", to: "DONE", allowedRoles: ["DESIGNER"] },
   { from: "REVISION", to: "IN_PROGRESS", allowedRoles: ["DESIGNER"] },
+  { from: "REVISION", to: "DONE", allowedRoles: ["DESIGNER"] },
   { from: "DONE", to: "DELIVERED", allowedRoles: ["CLIENT", "ADMIN"] },
-  { from: "DONE", to: "REVISION", allowedRoles: ["CLIENT"] },
+  { from: "DONE", to: "REVISION", allowedRoles: ["CLIENT", "ADMIN"] },
 ];
 
 export const TERMINAL_STATUSES: OrderStatus[] = ["DELIVERED", "CANCELLED"];

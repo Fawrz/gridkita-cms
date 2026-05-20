@@ -32,14 +32,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       { href: "/admin/recurring", label: "Recurring", icon: "Repeat" },
       { href: "/admin/reports", label: "Reports", icon: "BarChart3" },
     ]},
-    { label: "Sistem", items: [
-      { href: "/admin/notifications", label: "Notifikasi", icon: "Bell", badge: unread || undefined },
-      { href: "/admin/settings", label: "Settings", icon: "Settings" },
-    ]},
   ];
 
   return (
-    <DashboardShell groups={groups} me={me} unread={unread} notifLink="/admin/notifications" roleLabel="Admin" showThemeToggle>
+    <DashboardShell
+      groups={groups}
+      me={me}
+      unread={unread}
+      notifLink="/admin/notifications"
+      profileLink="/admin/profile"
+      settingsLink="/admin/settings"
+      roleLabel="Admin"
+    >
       {children}
     </DashboardShell>
   );

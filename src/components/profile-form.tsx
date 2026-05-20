@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -69,7 +70,7 @@ export function ProfileForm({
             </div>
           )}
           <div className="sm:col-span-2 flex items-center gap-3">
-            <Button type="submit">Simpan perubahan</Button>
+            <SubmitButton loadingText="Menyimpan...">Simpan perubahan</SubmitButton>
             <Button type="reset" variant="ghost">
               Batal
             </Button>

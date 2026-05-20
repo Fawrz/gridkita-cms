@@ -3,6 +3,7 @@
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/session";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 export async function addManualCashFlow(data: {
   type: "INCOME" | "EXPENSE";
@@ -12,11 +13,16 @@ export async function addManualCashFlow(data: {
   occurredAt: string;
 }) {
   const me = await requireRole("ADMIN");
+  const occurredAt = data.occurredAt ? new Date(data.occurredAt) : new Date();
+  if (Number.isNaN(occurredAt.getTime())) {
+    throw new Error("Tanggal cashflow tidak valid.");
+  }
   await db.cashFlow.create({
-    data: { ...data, source: "MANUAL", recordedById: me.id, occurredAt: new Date(data.occurredAt) },
+    data: { ...data, source: "MANUAL", recordedById: me.id, occurredAt },
   });
   revalidatePath("/admin/cashflow");
   revalidatePath("/admin/reports");
+  redirect("/admin/cashflow?toast=cashflow-created");
 }
 
 export async function toggleRecurring(id: string) {
@@ -25,6 +31,7 @@ export async function toggleRecurring(id: string) {
   if (!r) throw new Error("Tidak ditemukan.");
   await db.recurringExpense.update({ where: { id }, data: { isActive: !r.isActive } });
   revalidatePath("/admin/recurring");
+  redirect("/admin/recurring?toast=recurring-status-updated");
 }
 
 export async function syncRecurringExpenses() {
@@ -52,4 +59,7 @@ export async function syncRecurringExpenses() {
       db.recurringExpense.update({ where: { id: r.id }, data: { lastGeneratedAt: new Date() } }),
     ]);
   }
+  revalidatePath("/admin/recurring");
+  revalidatePath("/admin/cashflow");
+  redirect("/admin/recurring?toast=recurring-synced");
 }

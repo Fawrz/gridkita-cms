@@ -1,6 +1,7 @@
 import { Plus, Pencil } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -46,9 +47,9 @@ export default async function AdminRecurringPage() {
         actions={
           <div className="flex gap-2">
             <form action={handleSyncRecurring}>
-              <Button type="submit" variant="outline">
+              <SubmitButton loadingText="Syncing..." variant="outline">
                 <RefreshCw className="size-4 mr-1.5" /> Sync Recurring
-              </Button>
+              </SubmitButton>
             </form>
             <RecurringDialog action={createRecurringExpense} categories={expenseCategoriesList} />
           </div>
@@ -238,9 +239,9 @@ function RecurringDialog({
               </p>
             </div>
           </div>
-          <Button type="submit" className="w-full">
+          <SubmitButton loadingText="Menyimpan..." className="w-full">
             Simpan
-          </Button>
+          </SubmitButton>
         </form>
       </DialogContent>
     </Dialog>

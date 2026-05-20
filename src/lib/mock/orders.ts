@@ -1,6 +1,6 @@
 import type { Order, OrderStatusHistory, Payment, Deliverable } from "@/types";
 
-export const orders: Order[] = [
+export const orders: Order[] = ([
   // Pesanan dalam berbagai status — semua 11 status PRD §4.3 terwakili
   {
     id: "o_001",
@@ -274,7 +274,10 @@ export const orders: Order[] = [
     createdAt: "2026-03-05T09:00:00Z",
     updatedAt: "2026-03-09T11:00:00Z",
   },
-];
+] satisfies Omit<Order, "adminApprovedDeliverable">[]).map((order) => ({
+  ...order,
+  adminApprovedDeliverable: order.status === "DELIVERED",
+}));
 
 export const orderHistory: OrderStatusHistory[] = [
   {

@@ -1,6 +1,8 @@
 "use client";
 
+import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -24,6 +26,8 @@ export function ActionIconButton({
   asChild?: boolean;
   children: React.ReactNode;
 }) {
+  const { pending } = useFormStatus();
+
   const button = (
     <Button
       asChild={asChild}
@@ -32,8 +36,13 @@ export function ActionIconButton({
       variant={variant}
       aria-label={label}
       className={cn("shrink-0", className)}
+      disabled={pending}
     >
-      {children}
+      {pending ? (
+        <Loader2 className="size-4 animate-spin" />
+      ) : (
+        children
+      )}
     </Button>
   );
 

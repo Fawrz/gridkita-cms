@@ -39,7 +39,8 @@ export type NotificationType =
   | "ORDER_DONE"
   | "ORDER_DELIVERED"
   | "QUOTE_NEW"
-  | "QUOTE_OFFERED";
+  | "QUOTE_OFFERED"
+  | "DELIVERABLE_UPLOADED";
 
 export interface User {
   id: string;
@@ -118,6 +119,7 @@ export interface Order {
   finalPrice: number;
   status: OrderStatus;
   revisionCount: number;
+  adminApprovedDeliverable: boolean;
   brief: BriefData;
   attachments: OrderAttachment[];
   createdAt: string;

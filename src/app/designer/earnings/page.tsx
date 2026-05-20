@@ -1,12 +1,15 @@
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { requireRole } from "@/lib/session";
 import { commissionByDesigner, payoutsByDesigner, payoutBatches } from "@/lib/queries/finance";
 import { allOrders } from "@/lib/queries/orders";
 import { formatIDR, formatDate, periodLabel } from "@/lib/format";
-import { Wallet, TrendingUp, CheckCircle2 } from "lucide-react";
+import { Wallet, TrendingUp, CheckCircle2, Info } from "lucide-react";
 
 export default async function DesignerEarningsPage() {
   const me = await requireRole("DESIGNER");
@@ -31,6 +34,37 @@ export default async function DesignerEarningsPage() {
         title="Komisi Saya"
         description="Akumulasi komisi 70% dari setiap order yang Anda kerjakan."
       />
+
+      <Alert className="mb-6 border-info/40 bg-info/5">
+        <Info className="size-4 text-info" />
+        <AlertTitle>Pencairan diproses oleh admin</AlertTitle>
+        <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            {totalAccrued > 0
+              ? `Ada ${formatIDR(totalAccrued)} komisi yang belum dicairkan. Komisi ini akan masuk ke batch payout admin berikutnya.`
+              : "Belum ada komisi yang menunggu pencairan saat ini."}{" "}
+            Pencairan dilakukan secara batch bulanan ke rekening yang tertera di profil Anda.
+          </span>
+          {me.bankAccount ? (
+            <Button asChild size="sm" variant="outline" className="h-auto max-w-full shrink-0 justify-start whitespace-normal py-2 text-left">
+              <Link href="/designer/profile" title="Klik untuk mengubah rekening">
+                <span className="block">
+                  <span className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    Rekening pencairan
+                  </span>
+                  <span className="block max-w-[280px] truncate font-medium">
+                    {me.bankAccount}
+                  </span>
+                </span>
+              </Link>
+            </Button>
+          ) : (
+            <Button asChild size="sm" variant="outline" className="shrink-0">
+              <Link href="/designer/profile">Lengkapi rekening</Link>
+            </Button>
+          )}
+        </AlertDescription>
+      </Alert>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard
@@ -66,7 +100,7 @@ export default async function DesignerEarningsPage() {
           <div className="p-5 border-b">
             <h2 className="font-semibold">Riwayat Komisi</h2>
             <p className="text-sm text-muted-foreground">
-              Setiap order yang DELIVERED otomatis mencatat komisi 70%.
+              Komisi otomatis tercatat saat order DELIVERED. Status “Belum dicairkan” berarti menunggu batch payout admin.
             </p>
           </div>
           {entries.length === 0 ? (

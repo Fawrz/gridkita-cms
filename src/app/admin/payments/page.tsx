@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { SubmitButton } from "@/components/submit-button";
 import { PageHeader } from "@/components/page-header";
 import { payments } from "@/lib/queries/orders";
 import { allOrders } from "@/lib/queries/orders";
@@ -48,7 +49,7 @@ export default async function AdminPaymentsPage() {
                 </div>
                 <div className="grid sm:grid-cols-[180px_1fr] gap-4">
                   <div className="relative aspect-[4/3] rounded-lg overflow-hidden bg-muted border">
-                    {p.proofImageUrl ? <Image src={p.proofImageUrl} alt="Bukti pembayaran" fill sizes="180px" className="object-cover" /> : <div className="h-full grid place-items-center text-xs text-muted-foreground">Belum ada bukti</div>}
+                    {p.proofImageUrl ? <Image src={p.proofImageUrl} alt="Bukti pembayaran" fill sizes="180px" className="object-cover" unoptimized /> : <div className="h-full grid place-items-center text-xs text-muted-foreground">Belum ada bukti</div>}
                   </div>
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><strong className="tabular-nums">{formatIDR(p.amount)}</strong></div>
@@ -60,12 +61,12 @@ export default async function AdminPaymentsPage() {
                   <div className="mt-4 grid sm:grid-cols-2 gap-3">
                     <form action={handleApprove}>
                       <input type="hidden" name="orderId" value={p.orderId} />
-                      <Button type="submit"><Check className="size-4 mr-1" /> Approve</Button>
+                      <SubmitButton loadingText="Memproses..."><Check className="size-4 mr-1" /> Approve</SubmitButton>
                     </form>
                     <form action={handleReject} className="space-y-2">
                       <input type="hidden" name="orderId" value={p.orderId} />
                       <div className="space-y-1.5"><Label>Alasan reject (jika ditolak)</Label><Textarea name="reason" rows={2} placeholder="Nominal tidak sesuai / bukti tidak jelas..." /></div>
-                      <Button type="submit" variant="outline" className="w-full"><X className="size-4 mr-1" /> Reject</Button>
+                      <SubmitButton loadingText="Memproses..." variant="outline"><X className="size-4 mr-1" /> Reject</SubmitButton>
                     </form>
                   </div>
                 )}

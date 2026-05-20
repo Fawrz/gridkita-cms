@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Send, Eye } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,7 +50,7 @@ export default async function AdminQuotesPage() {
                   <div className="space-y-1.5"><Label>Harga penawaran</Label><Input type="number" name="price" placeholder="cth. 1800000" defaultValue={o.quotedPrice ?? ""} /></div>
                   <div className="space-y-1.5"><Label>Estimasi hari</Label><Input type="number" name="days" placeholder="cth. 10" /></div>
                   <div className="space-y-1.5"><Label>Catatan quote</Label><Textarea name="note" rows={3} placeholder="Scope termasuk poster, e-flyer, feed 5 slot..." /></div>
-                  <Button type="submit" className="w-full"><Send className="size-4 mr-1" /> Kirim Quote</Button>
+                  <SubmitButton loadingText="Mengirim quote..." className="w-full"><Send className="size-4 mr-1" /> Kirim Quote</SubmitButton>
                 </form>
               </CardContent>
             </Card>

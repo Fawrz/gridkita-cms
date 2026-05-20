@@ -15,7 +15,7 @@ export async function createDesigner(data: {
     data: { name: data.name, email: data.email, password: hash, role: "DESIGNER", bankAccount: data.bankAccount },
   });
   revalidatePath("/admin/users");
-  redirect("/admin/users");
+  redirect("/admin/users?toast=designer-created");
 }
 
 export async function toggleUserActive(userId: string) {
@@ -24,12 +24,14 @@ export async function toggleUserActive(userId: string) {
   if (!user) throw new Error("User tidak ditemukan.");
   await db.user.update({ where: { id: userId }, data: { isActive: !user.isActive } });
   revalidatePath("/admin/users");
+  redirect("/admin/users?toast=user-status-updated");
 }
 
 export async function deletePortfolio(portfolioId: string) {
   await requireRole("ADMIN");
   await db.portfolio.delete({ where: { id: portfolioId } });
   revalidatePath("/admin/portfolio");
+  redirect("/admin/portfolio?toast=portfolio-deleted");
 }
 
 export async function togglePackageActive(packageId: string) {
@@ -38,6 +40,7 @@ export async function togglePackageActive(packageId: string) {
   if (!pkg) throw new Error("Paket tidak ditemukan.");
   await db.servicePackage.update({ where: { id: packageId }, data: { isActive: !pkg.isActive } });
   revalidatePath("/admin/catalog");
+  redirect("/admin/catalog?toast=package-status-updated");
 }
 
 export async function createCategory(formData: FormData) {
@@ -48,6 +51,7 @@ export async function createCategory(formData: FormData) {
   if (!name || !slug) throw new Error("Nama dan slug wajib diisi.");
   await db.serviceCategory.create({ data: { name, slug, description } });
   revalidatePath("/admin/catalog");
+  redirect("/admin/catalog?toast=category-created");
 }
 
 export async function createPackage(formData: FormData) {
@@ -65,6 +69,7 @@ export async function createPackage(formData: FormData) {
     data: { name, slug, categoryId, description, features, basePrice: price, estimatedDays, thumbnailPath: "" },
   });
   revalidatePath("/admin/catalog");
+  redirect("/admin/catalog?toast=package-created");
 }
 
 export async function createPortfolio(formData: FormData) {
@@ -76,6 +81,7 @@ export async function createPortfolio(formData: FormData) {
   await db.portfolio.create({ data: { title, category, description, createdById: me.id } });
   revalidatePath("/admin/portfolio");
   revalidatePath("/portfolio");
+  redirect("/admin/portfolio?toast=portfolio-created");
 }
 
 export async function createRecurringExpense(formData: FormData) {
@@ -87,4 +93,5 @@ export async function createRecurringExpense(formData: FormData) {
   if (!name || !categoryId) throw new Error("Nama dan kategori wajib diisi.");
   await db.recurringExpense.create({ data: { name, categoryId, amount, recurrenceDay } });
   revalidatePath("/admin/recurring");
+  redirect("/admin/recurring?toast=recurring-created");
 }

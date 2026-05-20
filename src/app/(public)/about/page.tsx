@@ -36,11 +36,11 @@ export default function AboutPage() {
           <CardContent className="p-6 space-y-4">
             <Badge variant="secondary">Tim Inti</Badge>
             <ul className="space-y-3 text-sm">
-              <li><span className="font-medium">Firta Aulia</span> — Owner & Admin</li>
-              <li><span className="font-medium">Wahyu Pratama</span> — Lead Designer</li>
-              <li><span className="font-medium">Raffi Hidayat</span> — Designer</li>
-              <li><span className="font-medium">Nabil Akbar</span> — Designer</li>
-              <li><span className="font-medium">Rifat</span> — Operations</li>
+              <li><span className="font-medium">Damar Prakoso</span> — Owner & Admin</li>
+              <li><span className="font-medium">Arka Mahendra</span> — Lead Designer</li>
+              <li><span className="font-medium">Nara Satria</span> — Designer</li>
+              <li><span className="font-medium">Bagas Wiratama</span> — Designer</li>
+              <li><span className="font-medium">Tara Kusuma</span> — Operations</li>
             </ul>
             <div className="border-t pt-4 text-xs text-muted-foreground">
               Proyek SIM UAS · Kelompok 4 · D4 Manajemen Informatika UNESA 2026

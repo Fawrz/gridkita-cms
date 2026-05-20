@@ -28,6 +28,7 @@ export async function assignOrder(orderId: string, designerId: string) {
   });
 
   revalidatePath(`/admin/orders/${orderId}`);
+  redirect(`/admin/orders/${orderId}?success=assigned`);
 }
 
 export async function sendQuote(orderId: string, price: number, days: number, note: string) {
@@ -50,6 +51,7 @@ export async function sendQuote(orderId: string, price: number, days: number, no
   });
 
   revalidatePath("/admin/quotes");
+  redirect("/admin/quotes?success=quote-sent");
 }
 
 export async function processPayrollBatch(designerIds: string[], periodMonth: string) {
@@ -74,7 +76,7 @@ export async function processPayrollBatch(designerIds: string[], periodMonth: st
   ]);
 
   revalidatePath("/admin/payroll");
-  redirect("/admin/payroll");
+  redirect("/admin/payroll?success=payout");
 }
 
 export async function acceptQuote(orderId: string) {
@@ -94,4 +96,41 @@ export async function acceptQuote(orderId: string) {
   ]);
 
   revalidatePath(`/dashboard/orders/${orderId}`);
+  redirect(`/dashboard/orders/${orderId}?success=quote-accepted`);
+}
+
+export async function approveDeliverablesForClient(orderId: string) {
+  const me = await requireRole("ADMIN");
+  const order = await db.order.findUnique({ where: { id: orderId } });
+  if (!order) throw new Error("Order tidak ditemukan.");
+  if (order.status !== "DONE") throw new Error("Order belum siap direview klien.");
+
+  await db.$transaction([
+    db.order.update({
+      where: { id: orderId },
+      data: { adminApprovedDeliverable: true },
+    }),
+    db.orderStatusHistory.create({
+      data: {
+        orderId,
+        fromStatus: order.status,
+        toStatus: order.status,
+        changedById: me.id,
+        note: "Admin menyetujui deliverable untuk direview klien",
+      },
+    }),
+    db.notification.create({
+      data: {
+        userId: order.clientId,
+        type: "ORDER_DONE",
+        title: "Hasil desain siap direview",
+        message: `Admin telah meneruskan hasil desain untuk order ${order.code}.`,
+        link: `/dashboard/orders/${orderId}`,
+      },
+    }),
+  ]);
+
+  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath(`/dashboard/orders/${orderId}`);
+  redirect(`/admin/orders/${orderId}?success=sent-to-client`);
 }

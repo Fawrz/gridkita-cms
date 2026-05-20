@@ -15,6 +15,7 @@ function toOrder(o: PrismaOrder): Order {
     finalPrice: Number(o.finalPrice),
     status: o.status as Order["status"],
     revisionCount: o.revisionCount,
+    adminApprovedDeliverable: o.adminApprovedDeliverable,
     brief: o.briefData as unknown as Order["brief"],
     attachments: o.attachments.map((a) => ({
       id: a.id, orderId: a.orderId, url: `/api/files/${a.id}`,

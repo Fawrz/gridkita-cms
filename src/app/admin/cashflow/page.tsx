@@ -1,6 +1,7 @@
 import { Plus, TrendingDown, TrendingUp, Minus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -31,9 +32,10 @@ export default async function AdminCashflowPage({
 
   async function handleAddManualCashFlow(formData: FormData) {
     "use server";
+    const category = formData.get("category");
     const data = {
       type: (formData.get("type") as "INCOME" | "EXPENSE") || "EXPENSE",
-      categoryId: String(formData.get("category") || undefined),
+      categoryId: category ? String(category) : undefined,
       amount: Number(formData.get("amount")),
       description: String(formData.get("description")),
       occurredAt: String(formData.get("date")),
@@ -122,9 +124,9 @@ export default async function AdminCashflowPage({
                     placeholder="cth. Beli kertas A3 untuk mockup"
                   />
                 </div>
-                <Button type="submit" className="w-full">
+                <SubmitButton loadingText="Menyimpan..." className="w-full">
                   Simpan
-                </Button>
+                </SubmitButton>
               </form>
             </DialogContent>
           </Dialog>

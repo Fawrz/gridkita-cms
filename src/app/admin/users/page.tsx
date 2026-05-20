@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation";
 import { Pencil, Plus, Power } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -176,7 +176,7 @@ function UserDialog({
             </Select>
           </div>
           <FormField id={`user-bank-${suffix}`} label="Rekening"><Input name="bankAccount" placeholder="BCA 123... a.n. ..." /></FormField>
-          <Button type="submit" className="w-full">Simpan</Button>
+          <SubmitButton loadingText="Menyimpan..." className="w-full">Simpan</SubmitButton>
         </form>
       </DialogContent>
     </Dialog>

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { ImagePlus, Save } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -59,9 +59,9 @@ export default async function AdminSettingsPage() {
                       <Label>Nama merchant (tampil di QRIS)</Label>
                       <Input defaultValue="GridKita Creative" name="merchantName" />
                     </div>
-                    <Button type="submit" className="w-full">
+                    <SubmitButton loadingText="Menyimpan..." className="w-full">
                       <Save className="size-4 mr-1.5" /> Simpan QRIS
-                    </Button>
+                    </SubmitButton>
                   </div>
                 </div>
               </form>
@@ -98,9 +98,9 @@ export default async function AdminSettingsPage() {
                     <Input defaultValue="Surabaya, Jawa Timur, Indonesia" name="address" />
                   </div>
                 </div>
-                <Button type="submit">
+                <SubmitButton loadingText="Menyimpan...">
                   <Save className="size-4 mr-1.5" /> Simpan
-                </Button>
+                </SubmitButton>
               </form>
             </CardContent>
           </Card>
@@ -139,9 +139,9 @@ export default async function AdminSettingsPage() {
                     </p>
                   </div>
                 </div>
-                <Button type="submit">
+                <SubmitButton loadingText="Menyimpan...">
                   <Save className="size-4 mr-1.5" /> Simpan
-                </Button>
+                </SubmitButton>
               </form>
             </CardContent>
           </Card>

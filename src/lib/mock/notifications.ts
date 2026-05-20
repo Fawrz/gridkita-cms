@@ -56,7 +56,7 @@ export const notifications: AppNotification[] = [
     userId: "u_admin",
     type: "QUOTE_NEW",
     title: "Permintaan kustom baru",
-    message: "Klien Amelia Putri mengajukan permintaan kustom Visual Wisuda.",
+    message: "Klien Nesya Larasati mengajukan permintaan kustom Visual Wisuda.",
     link: "/admin/quotes",
     isRead: false,
     createdAt: "2026-03-24T09:00:00Z",

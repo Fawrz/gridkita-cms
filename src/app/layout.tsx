@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
+import { ToastFromQuery } from "@/components/toast-from-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { RoleSwitcher } from "@/components/role-switcher";
 import { getCurrentUser } from "@/lib/session";
@@ -39,7 +40,8 @@ export default async function RootLayout({
           <TooltipProvider delayDuration={150}>
             {children}
             <Toaster richColors position="top-right" closeButton />
-            <RoleSwitcher currentUserId={me?.id ?? null} />
+            <ToastFromQuery />
+            <RoleSwitcher currentUserEmail={me?.email ?? null} />
           </TooltipProvider>
         </ThemeProvider>
       </body>

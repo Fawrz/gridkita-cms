@@ -2,6 +2,7 @@ import Image from "next/image";
 import { Plus, Pencil, Trash2, ImagePlus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,7 +31,7 @@ export default async function AdminPortfolioPage() {
             <CardContent className="p-5">
               <div className="flex items-start justify-between gap-3"><div><Badge variant="secondary" className="text-[10px]">{p.category}</Badge><h2 className="mt-2 font-semibold leading-tight">{p.title}</h2></div><div className="text-xs text-muted-foreground shrink-0">{formatDate(p.createdAt)}</div></div>
               <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{p.description}</p>
-              <div className="mt-4 flex gap-2"><PortfolioDialog action={createPortfolio} editTitle={p.title} /><form action={handleDeletePortfolio}><input type="hidden" name="portfolioId" value={p.id} /><Button type="submit" size="sm" variant="outline"><Trash2 className="size-4 mr-1" /> Hapus</Button></form></div>
+              <div className="mt-4 flex gap-2"><PortfolioDialog action={createPortfolio} editTitle={p.title} /><form action={handleDeletePortfolio}><input type="hidden" name="portfolioId" value={p.id} /><SubmitButton loadingText="Menghapus..." size="sm" variant="outline"><Trash2 className="size-4 mr-1" /> Hapus</SubmitButton></form></div>
             </CardContent>
           </Card>
         ))}
@@ -43,7 +44,7 @@ function PortfolioDialog({ action, editTitle }: { action: (formData: FormData) =
   return (
     <Dialog>
       <DialogTrigger asChild><Button size="sm" variant={editTitle ? "outline" : "default"}>{editTitle ? <Pencil className="size-4 mr-1" /> : <Plus className="size-4 mr-1" />}{editTitle ? "Edit" : "Tambah Portfolio"}</Button></DialogTrigger>
-      <DialogContent className="sm:max-w-lg"><DialogHeader><DialogTitle>{editTitle ? "Edit portfolio" : "Tambah portfolio"}</DialogTitle></DialogHeader><form action={action} className="space-y-4"><div className="space-y-1.5"><Label>Judul</Label><Input name="title" defaultValue={editTitle ?? ""} placeholder="cth. Rebranding Kopi Senja" /></div><div className="space-y-1.5"><Label>Kategori</Label><Input name="category" placeholder="Branding / Sosial Media" defaultValue="Branding" /></div><div className="space-y-1.5"><Label>Deskripsi</Label><Textarea name="description" rows={3} placeholder="Deskripsi singkat project..." /></div><label className="border-2 border-dashed rounded-lg p-6 grid place-items-center text-center text-sm text-muted-foreground cursor-pointer hover:border-primary/40"><ImagePlus className="size-5 mb-1" />Upload cover / gambar<input name="cover" type="file" className="hidden" /></label><Button type="submit" className="w-full">Simpan</Button></form></DialogContent>
+      <DialogContent className="sm:max-w-lg"><DialogHeader><DialogTitle>{editTitle ? "Edit portfolio" : "Tambah portfolio"}</DialogTitle></DialogHeader><form action={action} className="space-y-4"><div className="space-y-1.5"><Label>Judul</Label><Input name="title" defaultValue={editTitle ?? ""} placeholder="cth. Rebranding Kopi Senja" /></div><div className="space-y-1.5"><Label>Kategori</Label><Input name="category" placeholder="Branding / Sosial Media" defaultValue="Branding" /></div><div className="space-y-1.5"><Label>Deskripsi</Label><Textarea name="description" rows={3} placeholder="Deskripsi singkat project..." /></div><label className="border-2 border-dashed rounded-lg p-6 grid place-items-center text-center text-sm text-muted-foreground cursor-pointer hover:border-primary/40"><ImagePlus className="size-5 mb-1" />Upload cover / gambar<input name="cover" type="file" className="hidden" /></label><SubmitButton loadingText="Menyimpan..." className="w-full">Simpan</SubmitButton></form></DialogContent>
     </Dialog>
   );
 }

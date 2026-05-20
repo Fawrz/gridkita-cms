@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation";
 import { FolderPlus, Pencil, Plus, Power } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -105,7 +105,7 @@ function CategoryDialog({ action }: { action: (formData: FormData) => Promise<vo
           <FormField id="category-name" label="Nama"><Input name="name" placeholder="Branding & Identitas" /></FormField>
           <FormField id="category-slug" label="Slug"><Input name="slug" placeholder="branding" /></FormField>
           <FormField id="category-description" label="Deskripsi"><Textarea name="description" rows={3} /></FormField>
-          <Button type="submit" className="w-full">Simpan</Button>
+          <SubmitButton loadingText="Menyimpan..." className="w-full">Simpan</SubmitButton>
         </form>
       </DialogContent>
     </Dialog>
@@ -144,7 +144,7 @@ function PackageDialog({
           </div>
           <FormField id={`package-description-${suffix}`} label="Deskripsi"><Textarea name="description" rows={3} /></FormField>
           <FormField id={`package-features-${suffix}`} label="Features"><Textarea name="features" rows={3} placeholder="Satu fitur per baris" /></FormField>
-          <Button type="submit" className="w-full">Simpan</Button>
+          <SubmitButton loadingText="Menyimpan..." className="w-full">Simpan</SubmitButton>
         </form>
       </DialogContent>
     </Dialog>
