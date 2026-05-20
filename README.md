@@ -254,7 +254,7 @@ Ikuti langkah-langkah berikut untuk menjalankan project di lingkungan lokal Anda
 ### Langkah 1: Clone Repository
 
 ```bash
-git clone <URL_REPOSITORY>
+git clone https://github.com/Fawrz/gridkita-cms.git
 cd gridkita-cms
 ```
 
